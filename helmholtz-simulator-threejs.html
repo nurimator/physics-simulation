@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Simulator Helmholtz Coil - Three.js r160</title>
+<link rel="icon" href="data:," />
+<style>
+  :root {
+    --navy:#132741; --navy-2:#1e3a5f; --bg:#eef2f7; --accent:#2563eb;
+    --green:#166534; --line:#e2e8f0; --muted:#64748b; --radius:14px;
+  }
+  * { box-sizing:border-box; }
+  html, body { height:100%; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:#1e293b; display:flex; flex-direction:column; height:100vh; height:100dvh; overflow:hidden; }
+  header { background:#fff; color:var(--navy); padding:10px 20px; border-bottom:1px solid var(--line); flex:none; display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+  header h1 { margin:0; font-size:1rem; font-weight:700; letter-spacing:.2px; white-space:nowrap; }
+  header p { margin:0; font-size:.76rem; color:var(--muted); font-weight:500; text-align:right; }
+  main { max-width:1600px; width:100%; margin:0 auto; padding:14px 18px; display:grid; gap:16px; grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,1fr); align-items:stretch; flex:1; min-height:0; overflow:hidden; }
+  @media (max-width:1280px){ main{ grid-template-columns:300px minmax(0,1fr); } .right-col{ grid-column:1 / -1; display:grid; grid-template-columns:1fr 1fr; align-items:start; } }
+  @media (max-width:900px){ main{ grid-template-columns:1fr; } .right-col{ grid-column:auto; grid-template-columns:1fr; } }
+  /* Kiri scroll mandiri; tengah & kanan dikunci (kanan hanya scroll di isi tabel) */
+  .sidebar { min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+  .mid-col { min-height:0; overflow:hidden; }
+  .right-col { min-height:0; overflow:hidden; }
+  .sidebar::-webkit-scrollbar { width:10px; }
+  .sidebar::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:8px; border:2px solid var(--bg); }
+  /* Mode sempit: kembali ke scroll halaman normal */
+  @media (max-width:1280px){
+    body { display:block; height:auto; overflow:auto; }
+    main { overflow:visible; align-items:start; }
+    .sidebar, .right-col { overflow:visible; }
+    .mid-col { overflow:visible; }
+    .mid-col .card { display:block; overflow:visible; }
+    #scene-container { height:440px; flex:none; }
+  }
+  .card { background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:16px 16px 14px; box-shadow:0 2px 12px rgba(19,39,65,.06); }
+  .card h2 { margin:0 0 10px; font-size:1rem; color:var(--navy); display:flex; gap:10px; align-items:center; }
+  .step { flex:none; width:26px; height:26px; border-radius:8px; background:var(--navy); color:#fff; font-size:.78rem; font-weight:800; display:flex; align-items:center; justify-content:center; }
+  .param { margin:12px 0 4px; padding:10px 10px 8px; background:#f8fafc; border:1px solid #eef2f7; border-radius:10px; }
+  .param-head { display:flex; justify-content:space-between; align-items:center; font-size:.82rem; font-weight:650; margin-bottom:6px; }
+  .param-head .val { background:#eef4ff; color:var(--navy); padding:2px 9px; border-radius:999px; font-variant-numeric:tabular-nums; border:1px solid #dbeafe; }
+  input[type=range]{ width:100%; accent-color:var(--accent); margin:0; cursor:pointer; }
+  .row { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .row .grow { flex:1 1 auto; }
+  button { background:var(--navy); color:#fff; border:none; border-radius:10px; padding:10px 13px; cursor:pointer; font-weight:700; transition:all 0.15s ease; font-size:.83rem; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+  button:hover { filter:brightness(1.15); transform:translateY(-1px); }
+  button:active { transform:translateY(0); }
+  button:disabled { opacity:.5; cursor:default; filter:none; transform:none; }
+  button.secondary { background:#e2e8f0; color:#132741; }
+  button.excel { background:var(--green); color:#fff; }
+  .result-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-top:12px; }
+  .result-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+  .mini-stat { background:#fff; border:1px solid #eef2f7; border-radius:10px; padding:8px 10px; font-size:.76rem; color:#475569; }
+  .mini-stat b { display:block; font-size:.82rem; color:var(--navy); margin-top:2px; font-variant-numeric:tabular-nums; }
+  #bValue { font-size:2rem; font-weight:800; color:var(--navy); font-variant-numeric:tabular-nums; line-height:1.1; }
+  #helmStatus { display:inline-block; margin-top:8px; padding:6px 12px; border-radius:999px; font-weight:700; font-size:.8rem; }
+  .ok { background:#dcfce7; color:#166534; border:1px solid #bbf7d0; } .warn { background:#fef9c3; color:#854d0e; border:1px solid #fde68a; }
+  #scene-container { width:100%; flex:1; min-height:420px; border:1px solid #e2e8f0; border-radius:10px; overflow:hidden; background:#0b1626; position:relative; }
+  #scene-container canvas { display:block; }
+  #infoBtn, #resetBtn { position:absolute; top:10px; width:30px; height:30px; border-radius:50%; background:rgba(255,255,255,.94); border:1px solid #e2e8f0; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; box-shadow:0 2px 8px rgba(19,39,65,.12); }
+  #infoBtn { right:10px; }
+  #resetBtn { right:48px; }
+  #infoBtn:hover, #resetBtn:hover { filter:none; transform:none; border-color:#94a3b8; }
+  #infoBtn svg, #resetBtn svg { width:18px; height:18px; display:block; }
+  #infoPop { position:absolute; top:46px; right:10px; width:230px; background:rgba(255,255,255,.96); border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px; font-size:.76rem; color:#334155; line-height:1.65; box-shadow:0 6px 18px rgba(19,39,65,.14); display:none; }
+  #infoPop.show { display:block; }
+  #infoPop b { color:#132741; }
+  #chartCanvas { width:100%; border:1px solid #e2e8f0; border-radius:10px; background:#fff; }
+  .formula { background:#0f172a; color:#e2e8f0; padding:10px 12px; border-radius:10px; font-family:ui-monospace,Consolas,monospace; font-size:.78rem; overflow-x:auto; line-height:1.5; }
+  .mid-col { display:grid; gap:16px; min-width:0; min-height:0; overflow:hidden; }
+  .mid-col .card { display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+  .preview-bar { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-start; margin-top:10px; }
+  .pill { flex:none; background:var(--navy); color:#fff; border:1px solid var(--navy); border-radius:999px; padding:8px 12px; font-size:.78rem; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .pill:hover { filter:brightness(1.15); transform:none; }
+  .switch { flex:none; width:30px; height:17px; border-radius:999px; background:#64748b; position:relative; transition:background .15s ease; }
+  .knob { position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%; background:#fff; transition:left .15s ease; }
+  .pill.on .switch { background:#22c55e; }
+  .pill.on .knob { left:15px; }
+  .toggles-group { margin-top:14px; padding-top:12px; border-top:1px solid #e2e8f0; }
+  .toggle-grid { display:grid; gap:6px; }
+  .toggle-item { display:flex; align-items:center; gap:9px; font-size:.82rem; font-weight:550; cursor:pointer; color:#334155; background:#f8fafc; border:1px solid #eef2f7; border-radius:10px; padding:7px 10px; }
+  .toggle-item:hover { border-color:#cbd5e1; }
+  .toggle-item input[type=checkbox] { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; flex:none; }
+  /* ---- tabel data ---- */
+  .table-toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:2px 0 10px; font-size:.8rem; color:#475569; background:#f8fafc; border:1px solid #eef2f7; border-radius:10px; padding:8px 10px; }
+  .table-toolbar label { font-weight:700; color:var(--navy); }
+  .table-toolbar select { padding:7px 9px; border-radius:8px; border:1px solid #cbd5e1; background:#fff; font-size:.8rem; color:#132741; font-weight:600; }
+  .table-wrap { flex:1 1 auto; min-height:0; max-height:280px; overflow:hidden; display:flex; flex-direction:column; border:1px solid #e2e8f0; border-radius:10px; background:#fff; }
+  .head-wrap { flex:none; overflow-x:hidden; overflow-y:scroll; background:var(--navy); scrollbar-width:thin; scrollbar-color:var(--navy) var(--navy); }
+  .head-wrap::-webkit-scrollbar { width:10px; }
+  .head-wrap::-webkit-scrollbar-track, .head-wrap::-webkit-scrollbar-thumb { background:var(--navy); border:none; }
+  .table-scroll { flex:1 1 auto; min-height:0; overflow-x:hidden; overflow-y:auto; background:#fff; scrollbar-width:thin; scrollbar-color:#cbd5e1 #ffffff; }
+  .table-scroll::-webkit-scrollbar { width:10px; }
+  .table-scroll::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:8px; border:2px solid #fff; }
+  table.data.head, table.data.body { width:100%; table-layout:fixed; }
+  table.data.head th, table.data.body td { width:50%; }
+  table.data { width:100%; border-collapse:collapse; font-size:.79rem; font-variant-numeric:tabular-nums; }
+  table.data thead th { background:var(--navy); color:#fff; padding:9px 10px; text-align:right; font-weight:700; white-space:nowrap; font-size:.76rem; }
+  table.data tbody td { padding:7px 10px; border-top:1px solid #eef2f7; text-align:right; color:#1e293b; }
+  table.data tbody tr:nth-child(even) td { background:#f8fafc; }
+  table.data tbody tr:hover td { background:#eff6ff; }
+  table.data tbody tr.more-row td { text-align:center; color:var(--navy); font-weight:700; background:#eef4ff; }
+  @media (max-width:560px){ .result-grid{ grid-template-columns:1fr; } }
+  .right-col { display:grid; gap:16px; grid-template-rows:auto minmax(0,1fr); min-width:0; min-height:0; overflow:hidden; align-content:start; }
+  #dataCard { min-height:0; overflow:hidden; display:flex; flex-direction:column; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+<header>
+  <h1>Helmholtz Coil &mdash; 3D</h1>
+  <p>Medan magnet seragam &bull; Biot-Savart</p>
+</header>
+
+<main>
+  <!-- ===== Kolom kiri: kontrol ===== -->
+  <section class="card sidebar" aria-label="Panel kontrol">
+    <h2><span class="step">1</span><span>Parameter</span></h2>
+    <div class="param">
+      <div class="param-head"><span>Arus (I)</span><span class="val" id="vI">5.0 A</span></div>
+      <input id="inI" type="range" min="0" max="15" step="0.1" value="5" />
+    </div>
+    <div class="param">
+      <div class="param-head"><span>Lilitan per kumparan (n)</span><span class="val" id="vn">500</span></div>
+      <input id="inn" type="range" min="50" max="1000" step="10" value="500" />
+    </div>
+    <div class="param">
+      <div class="param-head"><span>Jari-jari (R)</span><span class="val" id="vR">16 cm</span></div>
+      <input id="inR" type="range" min="5" max="25" step="0.5" value="16" />
+    </div>
+    <div class="param">
+      <div class="param-head"><span>Jarak kumparan (d)</span><span class="val" id="vd">16 cm</span></div>
+      <input id="inD" type="range" min="4" max="60" step="0.5" value="16" />
+    </div>
+    <div class="param">
+      <div class="param-head"><span>Posisi probe (z)</span><span class="val" id="vz">0.0 cm</span></div>
+      <input id="inz" type="range" min="-50" max="50" step="0.5" value="0" />
+    </div>
+    <div class="row">
+      <button id="btnHelm" class="grow" title="Samakan jarak kumparan dengan jari-jari">⚙ Set Helmholtz (d = R)</button>
+    </div>
+
+    <div class="result-box">
+      <h2 style="margin-bottom:2px"><span class="step">2</span><span>Hasil di probe</span></h2>
+      <div id="bValue">&ndash;</div>
+      <div id="helmStatus" class="ok">&ndash;</div>
+      <div class="result-grid">
+        <div class="mini-stat">B pusat (z = 0)<b id="bCenter">–</b></div>
+        <div class="mini-stat">n &middot; I (ampere-lilit)<b id="bNI">–</b></div>
+      </div>
+      <p id="bDetail" style="font-size:.76rem;color:#475569;margin:8px 0 0"></p>
+    </div>
+    <div class="formula" style="margin-top:10px">B(z) = &mu;&#8320;nIR&sup2;/2 &middot; [1/(R&sup2;+(z+d/2)&sup2;)<sup>3/2</sup> + 1/(R&sup2;+(z&minus;d/2)&sup2;)<sup>3/2</sup>]</div>
+  </section>
+
+  <!-- ===== Kolom tengah: simulasi 3D + tombol preview ===== -->
+  <section class="mid-col">
+    <div class="card">
+      <h2><span class="step">3</span><span>Simulasi 3D</span></h2>
+      <div id="scene-container">
+        <button id="resetBtn" aria-label="Reset tampilan 3D" title="Reset tampilan">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7" stroke="#132741" stroke-width="2" stroke-linecap="round"/><polyline points="3,4 3,9 8,9" stroke="#132741" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button id="infoBtn" aria-label="Bantuan navigasi" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="#132741" stroke-width="2"/><rect x="11" y="10.5" width="2" height="6" rx="1" fill="#132741"/><circle cx="12" cy="7.5" r="1.4" fill="#132741"/></svg>
+        </button>
+        <div id="infoPop" role="tooltip">
+          <b>Navigasi 3D</b><br/>
+          &bull; Drag background: putar tampilan<br/>
+          &bull; Scroll: zoom<br/>
+          &bull; Drag probe merah: geser posisi z
+        </div>
+      </div>
+      <div class="preview-bar" role="group" aria-label="Pengaturan tampilan 3D">
+        <button type="button" class="pill off" id="tglGrid" aria-pressed="false">Grid<span class="switch" aria-hidden="true"><span class="knob"></span></span></button>
+        <button type="button" class="pill off" id="tglLines" aria-pressed="false">Garis medan<span class="switch" aria-hidden="true"><span class="knob"></span></span></button>
+        <button type="button" class="pill on" id="tglCurrent" aria-pressed="true">Animasi arus<span class="switch" aria-hidden="true"><span class="knob"></span></span></button>
+        <button type="button" class="pill on" id="tglDimensions" aria-pressed="true">Anotasi<span class="switch" aria-hidden="true"><span class="knob"></span></span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Kolom kanan: grafik + tabel ===== -->
+  <section class="right-col">
+    <div class="card">
+      <h2><span class="step">4</span><span>Grafik B(z)</span></h2>
+      <canvas id="chartCanvas" width="800" height="260"></canvas>
+    </div>
+    <div class="card" id="dataCard">
+      <h2><span class="step">5</span><span>Tabel Data B(z)</span></h2>
+      <div class="table-toolbar">
+        <label for="selStep">Langkah tabel:</label>
+        <select id="selStep">
+          <option value="0.1">0.1 cm (1001 baris)</option>
+          <option value="0.5">0.5 cm (201 baris)</option>
+          <option value="1" selected>1 cm (101 baris)</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <div class="head-wrap">
+          <table class="data head" aria-hidden="true">
+            <thead>
+              <tr><th>z (cm)</th><th>B (mT)</th></tr>
+            </thead>
+          </table>
+        </div>
+        <div class="table-scroll">
+          <table class="data body" aria-label="Tabel data medan magnet">
+            <tbody id="tblBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <button id="btnXlsx" class="excel" style="width:100%;margin-top:10px">&#11015; Unduh Excel (.xlsx)</button>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ---------- fisika (sama dgn versi 2D + off-axis eliptik utk streamline 3D) ----------
+const MU0 = 4 * Math.PI * 1e-7;
+const singleCoilB = (R, nI, z) => (MU0 * nI * R * R) / (2 * Math.pow(R*R + z*z, 1.5));
+const totalB = (Rm, nI, dm, z) => singleCoilB(Rm, nI, z + dm/2) + singleCoilB(Rm, nI, z - dm/2);
+
+// Evaluasi medan off-axis (r, z) dengan Integral Eliptik (AGM) untuk garis medan kurva 3D
+function ellipKE(m) {
+  if (m < 0) return { K: 0, E: 0 };
+  if (m >= 0.9999999) m = 0.9999999;
+  let a = 1.0, b = Math.sqrt(1 - m);
+  let c = Math.sqrt(m);
+  let sum_c = 0.5 * c * c;
+  let two_n = 1.0;
+  for (let i = 0; i < 16; i++) {
+    if (Math.abs(c) < 1e-12) break;
+    let a_next = 0.5 * (a + b);
+    let b_next = Math.sqrt(a * b);
+    c = 0.5 * (a - b);
+    sum_c += two_n * c * c;
+    two_n *= 2.0;
+    a = a_next;
+    b = b_next;
+  }
+  let K = Math.PI / (2 * a);
+  let E = K * (1 - sum_c);
+  return { K, E };
+}
+
+function singleLoopB2D(a, nI, z0, r, z) {
+  let dz = z - z0;
+  if (r < 1e-5) {
+    let denom = Math.pow(a * a + dz * dz, 1.5);
+    return { Br: 0, Bz: (MU0 * nI * a * a) / (2 * denom) };
+  }
+  let d_plus_sq = (a + r) * (a + r) + dz * dz;
+  let d_minus_sq = Math.max((a - r) * (a - r) + dz * dz, 1e-12);
+  let k_sq = (4 * a * r) / d_plus_sq;
+  let { K, E } = ellipKE(k_sq);
+  let sqrt_d_plus = Math.sqrt(d_plus_sq);
+  let Bz = (MU0 * nI / (2 * Math.PI * sqrt_d_plus)) * (K + ((a * a - r * r - dz * dz) / d_minus_sq) * E);
+  let Br = (MU0 * nI * dz / (2 * Math.PI * r * sqrt_d_plus)) * (-K + ((a * a + r * r + dz * dz) / d_minus_sq) * E);
+  return { Br, Bz };
+}
+
+function helmholtzField2D(a, nI, d, r, z) {
+  let b1 = singleLoopB2D(a, nI, -d/2, r, z);
+  let b2 = singleLoopB2D(a, nI, d/2, r, z);
+  return { Br: b1.Br + b2.Br, Bz: b1.Bz + b2.Bz };
+}
+
+function rk4Step(a, nI, d, r, z, ds) {
+  let f1 = helmholtzField2D(a, nI, d, r, z);
+  let m1 = Math.hypot(f1.Br, f1.Bz) || 1e-12;
+  let k1r = f1.Br / m1, k1z = f1.Bz / m1;
+
+  let r2 = r + 0.5 * ds * k1r, z2 = z + 0.5 * ds * k1z;
+  let f2 = helmholtzField2D(a, nI, d, r2, z2);
+  let m2 = Math.hypot(f2.Br, f2.Bz) || 1e-12;
+  let k2r = f2.Br / m2, k2z = f2.Bz / m2;
+
+  let r3 = r + 0.5 * ds * k2r, z3 = z + 0.5 * ds * k2z;
+  let f3 = helmholtzField2D(a, nI, d, r3, z3);
+  let m3 = Math.hypot(f3.Br, f3.Bz) || 1e-12;
+  let k3r = f3.Br / m3, k3z = f3.Bz / m3;
+
+  let r4 = r + ds * k3r, z4 = z + ds * k3z;
+  let f4 = helmholtzField2D(a, nI, d, r4, z4);
+  let m4 = Math.hypot(f4.Br, f4.Bz) || 1e-12;
+  let k4r = f4.Br / m4, k4z = f4.Bz / m4;
+
+  let dr = (ds / 6) * (k1r + 2*k2r + 2*k3r + k4r);
+  let dz = (ds / 6) * (k1z + 2*k2z + 2*k3z + k4z);
+  return { r: r + dr, z: z + dz };
+}
+
+function traceStreamline(a, nI, d, r0, z0, maxPts = 70, ds = 0.0075) {
+  let ptsForward = [];
+  let curr = { r: r0, z: z0 };
+  for (let i = 0; i < maxPts; i++) {
+    let next = rk4Step(a, nI, d, curr.r, curr.z, ds);
+    ptsForward.push(next);
+    curr = next;
+    if (Math.abs(curr.z) > 0.55 || curr.r > 0.45 || curr.r < 0.001) break;
+  }
+  let ptsBackward = [];
+  curr = { r: r0, z: z0 };
+  for (let i = 0; i < maxPts; i++) {
+    let next = rk4Step(a, nI, d, curr.r, curr.z, -ds);
+    ptsBackward.unshift(next);
+    curr = next;
+    if (Math.abs(curr.z) > 0.55 || curr.r > 0.45 || curr.r < 0.001) break;
+  }
+  return [...ptsBackward, { r: r0, z: z0 }, ...ptsForward];
+}
+
+const $ = id => document.getElementById(id);
+const els = { I:$('inI'), n:$('inn'), R:$('inR'), D:$('inD'), z:$('inz') };
+// State tampil/sembunyi dikendalikan tombol pill horizontal di kolom tengah
+const toggles = {
+  grid: { checked: false },
+  lines: { checked: false },
+  current: { checked: true },
+  dimensions: { checked: true }
+};
+const params = () => ({ I:+els.I.value, n:+els.n.value, Rcm:+els.R.value, Dcm:+els.D.value, zcm:+els.z.value });
+const fmtB = t => { if(!isFinite(t)||t<=0) return "0 \u00B5T"; const mT=t*1000; return mT>=1 ? mT.toFixed(3)+" mT" : (t*1e6).toFixed(1)+" \u00B5T"; };
+// 1 cm -> 0.05 world unit
+const S = 0.05;
+
+// ---------- scene r160 ----------
+const container = $('scene-container');
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(container.clientWidth, container.clientHeight);
+// r160: sRGB default, ACES tone mapping eksplisit
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+container.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b1626);
+const CAM_HOME = new THREE.Vector3(0, 0.6, 5.0);
+const TGT_HOME = new THREE.Vector3(0, 0, 0);
+const camera = new THREE.PerspectiveCamera(50, container.clientWidth/container.clientHeight, 0.01, 100);
+camera.position.copy(CAM_HOME);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.target.copy(TGT_HOME);
+
+// r155+: lampu fisik (useLegacyLights=false default). Intensitaspicked utk itu.
+scene.add(new THREE.HemisphereLight(0xffffff, 0x9aa5b5, 1.0));
+const key = new THREE.DirectionalLight(0xffffff, 2.0); key.position.set(3,5,2); scene.add(key);
+const fill = new THREE.DirectionalLight(0xbfd4ff, 0.6); fill.position.set(-4,-2,-3); scene.add(fill);
+
+const gridHelper = new THREE.GridHelper(6, 24, 0x7d8899, 0xb4bdc9);
+gridHelper.material.transparent = true;
+gridHelper.material.opacity = 0.2;
+scene.add(gridHelper);
+
+// grup dinamis
+const coilGroup = new THREE.Group(); scene.add(coilGroup);
+const linesGroup = new THREE.Group(); scene.add(linesGroup);
+const currentGroup = new THREE.Group(); scene.add(currentGroup);
+const dimensionGroup = new THREE.Group(); scene.add(dimensionGroup);
+// visibilitas awal mengikuti state default tombol preview
+linesGroup.visible = toggles.lines.checked;
+gridHelper.visible = toggles.grid.checked;
+
+const copperMat = new THREE.MeshStandardMaterial({
+  color: 0xc07f3e,
+  metalness: 0.85,
+  roughness: 0.3
+});
+const bobbinMat = new THREE.MeshStandardMaterial({
+  color: 0x3a4657,
+  metalness: 0.35,
+  roughness: 0.6,
+  side: THREE.DoubleSide // dinding dalam bore tetap terlihat dari dalam
+});
+const brassMat = new THREE.MeshStandardMaterial({
+  color: 0xd4af37,
+  metalness: 0.9,
+  roughness: 0.2
+});
+const darkMat = new THREE.MeshStandardMaterial({ color:0x3f4c60, metalness:0.25, roughness:0.7 });
+
+// sumbu + panah medan + probe
+const ARROWS = 21;
+const arrows = [];
+for (let i=0;i<ARROWS;i++){
+  const a = new THREE.ArrowHelper(new THREE.Vector3(1,0,0), new THREE.Vector3(), 0.5, 0x0284c7, 0.09, 0.05);
+  scene.add(a); arrows.push(a);
+}
+
+// Sensor probe merah
+const probeGroup = new THREE.Group();
+const probeMesh = new THREE.Mesh(new THREE.SphereGeometry(0.08, 24, 16),
+  new THREE.MeshStandardMaterial({ color:0xef4444, emissive:0x7f1d1d, roughness:0.4 }));
+const probeRing = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.012, 10, 40),
+  new THREE.MeshBasicMaterial({ color:0xef4444 }));
+probeRing.rotation.y = Math.PI/2;
+probeGroup.add(probeMesh);
+probeGroup.add(probeRing);
+scene.add(probeGroup);
+
+// papan alas fixed di bawah kedua dudukan tiang (muat jarak maksimum d = 60 cm)
+const boardMat = new THREE.MeshStandardMaterial({ color:0xb0824f, metalness:0.05, roughness:0.8 });
+const board = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.04, 0.5), boardMat);
+board.position.set(0, -1, 0);
+scene.add(board);
+
+const cLow = new THREE.Color(0x86b4dc), cHigh = new THREE.Color(0x1d4ed8), tmpC = new THREE.Color();
+
+// Helper pembuat text sprite 3D
+function makeTextSprite(message, bgColor, textColor, borderColor) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 72;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = bgColor;
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(4, 4, canvas.width - 8, canvas.height - 8, 12);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = textColor;
+  ctx.font = 'bold 26px system-ui, -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(message, canvas.width / 2, canvas.height / 2);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.minFilter = THREE.LinearFilter;
+  const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true });
+  const sprite = new THREE.Sprite(spriteMat);
+  sprite.scale.set(0.55, 0.155, 1);
+  return sprite;
+}
+
+// Pembuat partikel aliran arus di sepanjang SATU benang kawat kontinu
+let currentParticles = [];
+function buildCurrentParticles(Rw, dw) {
+  currentGroup.traverse((obj) => {
+    if (obj.geometry) obj.geometry.dispose();
+  });
+  currentGroup.clear();
+  currentParticles = [];
+  if (!toggles.current.checked) return;
+
+  // PENTING: radius bola WAJIB < clearance former (wireR*1.7) agar bola
+  // tidak menembus dinding sisi dalam wadah kumparan.
+  const pGeo = new THREE.SphereGeometry(0.011, 8, 8);
+  const pMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+
+  const wires = coilGroup.userData.wireCurves || [];
+  // Subgrup per sisi (koordinat lokal = titik kurva) agar geser jarak d
+  // murni translasi subgrup, tanpa membangun ulang partikel.
+  const subGroups = {};
+  for (const side of [-1, 1]) {
+    const g = new THREE.Group();
+    g.position.x = side * dw / 2;
+    currentGroup.add(g);
+    subGroups[side] = g;
+  }
+  currentGroup.userData.sides = subGroups;
+  for (const w of wires) {
+    const g = subGroups[w.side];
+    // Jumlah partikel mengikuti panjang benang agar kerapatan arus merata
+    const countPerCoil = Math.max(8, Math.min(20, Math.round(w.turns / 4)));
+    for (let i = 0; i < countPerCoil; i++) {
+      const t = i / countPerCoil;
+      const m = new THREE.Mesh(pGeo, pMat);
+      const pos = w.curve.getPointAt(t);
+      m.position.copy(pos);
+      g.add(m);
+      currentParticles.push({ mesh: m, curve: w.curve, t });
+    }
+
+    // Panah indikator arah arus pada keliling kumparan (Kaidah Tangan Kanan)
+    for (let a = 0; a < 2; a++) {
+      const phi = a * Math.PI + Math.PI / 4;
+      const px = 0;
+      const py = (Rw + 0.02) * Math.cos(phi);
+      const pz = (Rw + 0.02) * Math.sin(phi);
+      const dir = new THREE.Vector3(0, -Math.sin(phi), Math.cos(phi)).normalize();
+      const arrow = new THREE.ArrowHelper(dir, new THREE.Vector3(px, py, pz), 0.18, 0xf59e0b, 0.06, 0.035);
+      g.add(arrow);
+    }
+  }
+}
+
+// Pembuat garis medan magnet kurva 3D
+function buildFieldLines(p) {
+  linesGroup.traverse((obj) => {
+    if (obj.geometry) obj.geometry.dispose();
+  });
+  linesGroup.clear();
+  if (!toggles.lines.checked) return;
+
+  const Rm = p.Rcm / 100, dm = p.Dcm / 100, nI = p.n * p.I;
+  if (nI <= 0) return;
+
+  const seedR = [0.03, 0.07, 0.11, 0.15];
+  const angles = 6;
+  const lineMat = new THREE.LineBasicMaterial({
+    color: 0x0284c7,
+    transparent: true,
+    opacity: 0.55,
+    depthWrite: false
+  });
+
+  for (const r0 of seedR) {
+    const rawPts = traceStreamline(Rm, nI, dm, r0, 0, 70, 0.0075);
+    for (let a = 0; a < angles; a++) {
+      const phi = (a / angles) * Math.PI * 2;
+      const cosP = Math.cos(phi);
+      const sinP = Math.sin(phi);
+      const pts3D = [];
+
+      for (let k = 0; k < rawPts.length; k++) {
+        const pt = rawPts[k];
+        const x = pt.z * 100 * S;
+        const y = pt.r * 100 * S * cosP;
+        const z = pt.r * 100 * S * sinP;
+        pts3D.push(new THREE.Vector3(x, y, z));
+      }
+
+      if (pts3D.length > 2) {
+        const geo = new THREE.BufferGeometry().setFromPoints(pts3D);
+        const line = new THREE.Line(geo, lineMat);
+        linesGroup.add(line);
+
+        const midIdx = Math.floor(pts3D.length / 2);
+        if (midIdx + 1 < pts3D.length) {
+          const p1 = pts3D[midIdx];
+          const p2 = pts3D[midIdx + 1];
+          const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
+          const arrow = new THREE.ArrowHelper(dir, p1, 0.09, 0x0284c7, 0.04, 0.025);
+          linesGroup.add(arrow);
+        }
+      }
+    }
+  }
+}
+
+// Pembuat anotasi dimensi 3D (d dan R)
+function buildDimensions(p, Rw, dw) {
+  dimensionGroup.traverse((obj) => {
+    if (obj.geometry) obj.geometry.dispose();
+    if (obj.material && obj.material.map) obj.material.map.dispose();
+  });
+  dimensionGroup.clear();
+  if (!toggles.dimensions.checked) return;
+
+  const dimMat = new THREE.LineDashedMaterial({ color: 0xe8edf3, dashSize: 0.05, gapSize: 0.03 });
+
+  // 1. Dimensi d
+  const yD = Rw + 0.16;
+  const dPts = [new THREE.Vector3(-dw/2, yD, 0), new THREE.Vector3(dw/2, yD, 0)];
+  const dGeo = new THREE.BufferGeometry().setFromPoints(dPts);
+  const dLine = new THREE.Line(dGeo, dimMat);
+  dLine.computeLineDistances();
+  dimensionGroup.add(dLine);
+
+  const aD1 = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(-dw/2, yD, 0), 0.07, 0x0284c7, 0.04, 0.025);
+  const aD2 = new THREE.ArrowHelper(new THREE.Vector3(-1, 0, 0), new THREE.Vector3(dw/2, yD, 0), 0.07, 0x0284c7, 0.04, 0.025);
+  dimensionGroup.add(aD1);
+  dimensionGroup.add(aD2);
+
+  const tick1Geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-dw/2, Rw * 0.9, 0), new THREE.Vector3(-dw/2, yD + 0.04, 0)]);
+  const tick2Geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(dw/2, Rw * 0.9, 0), new THREE.Vector3(dw/2, yD + 0.04, 0)]);
+  dimensionGroup.add(new THREE.Line(tick1Geo, dimMat));
+  dimensionGroup.add(new THREE.Line(tick2Geo, dimMat));
+
+  const dSprite = makeTextSprite('d = ' + p.Dcm.toFixed(1) + ' cm', 'rgba(15,23,42,0.85)', '#38bdf8', '#0284c7');
+  dSprite.position.set(0, yD + 0.11, 0);
+  dimensionGroup.add(dSprite);
+
+  // 2. Dimensi R: ujung panah pas menyentuh sisi dalam wadah (bukan Rw nominal
+  //    yg terletak di tengah pak lilitan sehingga tampak menembus kumparan)
+  const Rin = coilGroup.userData.bobbinInnerR ?? Rw;
+  const rPts = [new THREE.Vector3(dw/2, 0, 0), new THREE.Vector3(dw/2, Rin, 0)];
+  const rGeo = new THREE.BufferGeometry().setFromPoints(rPts);
+  const rLine = new THREE.Line(rGeo, dimMat);
+  rLine.computeLineDistances();
+  dimensionGroup.add(rLine);
+
+  const aR = new THREE.ArrowHelper(new THREE.Vector3(0, 1, 0), new THREE.Vector3(dw/2, 0, 0), Rin, 0xa855f7, 0.06, 0.035);
+  dimensionGroup.add(aR);
+
+  const rSprite = makeTextSprite('R = ' + p.Rcm.toFixed(1) + ' cm', 'rgba(15,23,42,0.85)', '#c084fc', '#9333ea');
+  rSprite.position.set(dw/2 + 0.28, Rin / 2, 0);
+  dimensionGroup.add(rSprite);
+}
+
+// Kurva ANALITIK satu benang kontinu: lead-in kuadratik -> heliks
+// multi-lapisan eksak (dievaluasi matematis per-segmen TubeGeometry) ->
+// lead-out kuadratik. Berbeda dgn CatmullRom titik jarang: lingkaran kawat
+// dijamin halus sempurna, radius tidak pernah "kepotong chord" sehingga
+// kawat tidak tenggelam ke former silinder.
+class HelixAnalyticCurve extends THREE.Curve {
+  constructor(xCenter, layerWidth, rInner, radialStep, turnsPerLayer, layers,
+              visualTurns, leadA, leadB, helixStart) {
+    super();
+    this.xCenter = xCenter;
+    this.xLeft = xCenter - layerWidth / 2;
+    this.layerWidth = layerWidth;
+    this.rInner = rInner;
+    this.radialStep = radialStep;
+    this.turnsPerLayer = turnsPerLayer;
+    this.layers = layers;
+    this.visualTurns = visualTurns;
+    this.leadA = leadA.clone();
+    this.leadB = leadB.clone();
+    this.helixStart = helixStart.clone();
+    this.leadOutA = null;
+    this.leadOutB = null;
+    // Panjang pendekatan tiap segmen (untuk alokasi parameter t):
+    // lead-in ~0.25, heliks = panjang kawat, lead-out ~0.25.
+    const helixLen = visualTurns * 2 * Math.PI * (rInner + (layers - 1) * radialStep / 2);
+    this.wIn = 0.25;
+    this.wHelix = helixLen;
+    this.wOut = 0.25;
+    this.wTotal = this.wIn + this.wHelix + this.wOut;
+  }
+
+  setLeadOut(a, b) {
+    this.leadOutA = a.clone();
+    this.leadOutB = b.clone();
+  }
+
+  // Titik heliks eksak pada turnFrac kontinu (0..visualTurns)
+  helixPoint(turnFrac, target) {
+    const layer = Math.min(this.layers - 1, Math.floor(turnFrac / this.turnsPerLayer));
+    const tInLayer = (turnFrac - layer * this.turnsPerLayer) / this.turnsPerLayer;
+    const frac = (layer % 2 === 0) ? tInLayer : (1 - tInLayer);
+    const x = this.xLeft + frac * this.layerWidth;
+    const r = this.rInner + layer * this.radialStep;
+    const angle = Math.PI + turnFrac * Math.PI * 2;
+    return target.set(x, r * Math.cos(angle), r * Math.sin(angle));
+  }
+
+  quadPoint(a, b, c, t, target) {
+    const u = 1 - t;
+    return target.set(
+      u * u * a.x + 2 * u * t * b.x + t * t * c.x,
+      u * u * a.y + 2 * u * t * b.y + t * t * c.y,
+      u * u * a.z + 2 * u * t * b.z + t * t * c.z
+    );
+  }
+
+  getPoint(t, target = new THREE.Vector3()) {
+    const s = t * this.wTotal;
+    if (s < this.wIn) {
+      // lead-in: terminal -> titik awal heliks
+      return this.quadPoint(this.leadA, this.leadB, this.helixStart, s / this.wIn, target);
+    }
+    if (s < this.wIn + this.wHelix) {
+      const turnFrac = (s - this.wIn) / this.wHelix * this.visualTurns;
+      return this.helixPoint(Math.min(this.visualTurns, Math.max(0, turnFrac)), target);
+    }
+    // lead-out: titik akhir heliks -> terminal
+    const helixEnd = this.helixPoint(this.visualTurns, new THREE.Vector3());
+    return this.quadPoint(helixEnd, this.leadOutA, this.leadOutB,
+      (s - this.wIn - this.wHelix) / this.wOut, target);
+  }
+}
+
+// (Dihapus: HelicalWindingCurve & getWindingPoint multi-lapisan yang lama.
+//  Lilitan kini dibangun sebagai SATU path CatmullRomCurve3 kontinu
+//  langsung di dalam rebuildCoils() di bawah.)
+
+function rebuildCoils(p){
+  // Buang geometri lama agar GPU tidak bocor saat slider digeser berulang
+  coilGroup.traverse((obj) => {
+    if (obj.geometry) obj.geometry.dispose();
+  });
+  coilGroup.clear();
+  coilGroup.userData.wireCurves = [];
+  coilGroup.userData.sides = {};
+  const Rw = p.Rcm*S, dw = p.Dcm*S;
+
+  // --- PARAMETER TETAP: wireR konstan, rumah bobbin FIX, max 10/lapis ---
+  // n fisis (50..1000) -> visualTurns = n/10 (5..100 lilitan per kumparan).
+  // wireR dikunci 0.008 berapapun n-nya. Rumah bobbin (lebar alur tempat
+  // kawat) FIX berkapasitas penuh 10 LAPIS x 10 lilitan = 100 lilitan, TIDAK
+  // berubah terhadap n maupun R: bobbinWidth & flangeOuterR konstan.
+  // Tiap lapis diisi MAKSIMAL 10 lilitan; kalau n kecil, lapis/lilitan yang
+  // ada memang TIDAK penuh (renggang, tidak rapat) - tidak mengapa.
+  // Lilitan selalu mulai dari lapisan 0 (paling dalam, menempel former)
+  // menumpuk ke luar; lapisan terakhir boleh sebagian.
+  const visualTurns = Math.max(5, Math.round(p.n / 10));
+  const wireR = 0.008;
+  const CAP_TURNS_PER_LAYER = 10;
+  const CAP_LAYERS = 10;
+  const pitch = wireR * 2 * 1.025; // dempet saat lapis penuh (celah ~2.5% diameter)
+  const layerWidth = pitch * CAP_TURNS_PER_LAYER; // LEBAR FIX (kapasitas penuh)
+  const radialStep = wireR * 2.05;
+  // Rumah bobbin FIX: menampung kapasitas penuh 10 lapis x 10 lilitan.
+  const fullInner = Rw - ((CAP_LAYERS - 1) / 2) * radialStep;
+  const fullOuter = Rw + ((CAP_LAYERS - 1) / 2) * radialStep;
+  // Isi aktual: hanya sebanyak visualTurns, mulai dari lapis terdalam.
+  // turnsPerLayer aktual = 10 (kecuali total < 10), jadi lapis terisi penuh
+  // 10 kecuali lapis terakhir yang boleh sebagian.
+  const turnsPerLayer = Math.min(CAP_TURNS_PER_LAYER, visualTurns);
+  const layers = Math.ceil(visualTurns / turnsPerLayer);
+  const maxLayerWidth = layerWidth; // FIX, tidak berubah terhadap n
+  // Radius nominal Rw = tengah RUMAH (kapasitas penuh) agar R fisis tetap.
+  // Isi aktual menumpuk dari lapis terdalam rumah ke luar.
+  const rInner = fullInner;
+  const rOuter = fullInner + (layers - 1) * radialStep;
+
+  // Bobbin FIX: lebar & diameter luar TIDAK berubah terhadap n.
+  // Former diberi CLEARANCE radial dari kawat terdalam agar bebas
+  // z-fighting SEKALIGUS tidak tertembus sisa faceting tube.
+  const bobbinInnerR = fullInner - wireR * 1.7; // clearance cukup utk bola partikel (r=0.011), bukan menyentuh pas
+  const bobbinWidth = layerWidth + 0.06; // FIX (layerWidth FIX kapasitas penuh)
+  const flangeOuterR = fullOuter + wireR * 1.6; // FIX (fullOuter FIX kapasitas penuh)
+  const flangeThick = 0.016;
+  // Simpan radius dinding dalam wadah utk anotasi R (ujung panah pas menyentuh)
+  coilGroup.userData.bobbinInnerR = bobbinInnerR;
+
+  for (const side of [-1, 1]){
+    const xCenter = side * dw / 2;
+    // Grup per sisi dalam koordinat LOKAL (pusat kumparan = x 0) sehingga
+    // geser jarak d murni translasi grup, tanpa rebuild geometri.
+    const sideGroup = new THREE.Group();
+    sideGroup.position.x = xCenter;
+    coilGroup.add(sideGroup);
+    coilGroup.userData.sides[side] = sideGroup;
+
+    // 1. Bobbinformer silinder BERLUBANG (tabung terbuka dua ujung).
+    //    Sengaja openEnded + DoubleSide: dinding former terlihat,
+    //    tetapi bore sumbu tetap KOSONG/terbuka sehingga probe lewat bebas.
+    const coreGeo = new THREE.CylinderGeometry(bobbinInnerR, bobbinInnerR, bobbinWidth, 48, 1, true);
+    coreGeo.rotateZ(Math.PI / 2);
+    const core = new THREE.Mesh(coreGeo, bobbinMat);
+    core.position.set(0, 0, 0);
+    sideGroup.add(core);
+
+    // 2. Flange samping: pelat RING (annulus) dengan LUBANG tengah,
+    //    sehingga bore sumbu tetap terbuka dan probe tidak menembus material.
+    //    Dibuat dari Shape berlubang + Extrude agar ada ketebalan pelat.
+    const holeR = bobbinInnerR;
+    const ringShape = new THREE.Shape();
+    ringShape.absarc(0, 0, flangeOuterR, 0, Math.PI * 2, false);
+    const ringHole = new THREE.Path();
+    ringHole.absarc(0, 0, holeR, 0, Math.PI * 2, true);
+    ringShape.holes.push(ringHole);
+    const flangeGeo = new THREE.ExtrudeGeometry(ringShape, { depth: flangeThick, bevelEnabled: false, curveSegments: 64 });
+    flangeGeo.translate(0, 0, -flangeThick / 2);
+    flangeGeo.rotateY(Math.PI / 2); // sumbu lubang -> X (sumbu kumparan)
+    const fLeft = new THREE.Mesh(flangeGeo, bobbinMat);
+    fLeft.position.set(-bobbinWidth / 2, 0, 0);
+    sideGroup.add(fLeft);
+    const fRight = new THREE.Mesh(flangeGeo, bobbinMat);
+    fRight.position.set(bobbinWidth / 2, 0, 0);
+    sideGroup.add(fRight);
+
+    // 3. SATU BENANG KONTINU: lead-in + helix + lead-out dalam SATU path
+    //    sehingga hanya ada SATU TubeGeometry per kumparan.
+    const pts = [];
+    const termY = -Rw - 0.14;
+
+    // --- (a) lead-in: dari terminal block naik ke titik awal lilitan ---
+    const helixStartX = -layerWidth / 2;
+    const helixStart = new THREE.Vector3(helixStartX, -rInner, 0); // sudut bawah (angle=PI)
+    pts.push(new THREE.Vector3(-0.02, termY + 0.02, 0));
+    pts.push(new THREE.Vector3(-0.045, -rOuter - 0.05, -0.03));
+    pts.push(helixStart.clone());
+
+    // --- (b) badan heliks: dievaluasi ANALITIK per-segmen oleh HelixAnalyticCurve
+    //    (tidak perlu menumpuk ribuan titik kontrol di sini) ---
+
+    // --- (c) lead-out: dari titik akhir lilitan turun ke terminal block ---
+    pts.push(new THREE.Vector3(0.045, -rOuter - 0.05, 0.03));
+    pts.push(new THREE.Vector3(0.02, termY + 0.02, 0));
+
+    // SATU kurva CatmullRom -> SATU TubeGeometry -> SATU mesh kawat.
+    // TubeGeometry disampel ANALITIK per-segmen (bukan dari titik CatmullRom
+    // yang jarang), sehingga lingkaran kawat halus sempurna dan tidak
+    // "tenggelam" ke former di antara titik kontrol.
+    const singleCurve = new HelixAnalyticCurve(
+      0, layerWidth, rInner, radialStep, turnsPerLayer, layers,
+      visualTurns, pts[0], pts[1], pts[2]
+    );
+    singleCurve.setLeadOut(
+      new THREE.Vector3(0.045, -rOuter - 0.05, 0.03),
+      new THREE.Vector3(0.02, termY + 0.02, 0)
+    );
+    // ~80 segmen per lilitan cukup utk lingkaran halus; batas atas menekan
+    // alokasi geometri saat slider digeser (perhatikan: visual 1:10).
+    const tubeSegs = Math.min(10000, Math.max(2500, visualTurns * 80));
+    const tubeGeo = new THREE.TubeGeometry(singleCurve, tubeSegs, wireR, 10, false);
+    const wireMesh = new THREE.Mesh(tubeGeo, copperMat);
+    sideGroup.add(wireMesh);
+
+    // Tutup ujung kawat dengan bola agar terlihat solid menyatu
+    const capGeo = new THREE.SphereGeometry(wireR * 1.001, 12, 8);
+    const capA = new THREE.Mesh(capGeo, copperMat);
+    capA.position.copy(singleCurve.getPoint(0));
+    sideGroup.add(capA);
+    const capB = new THREE.Mesh(capGeo, copperMat);
+    capB.position.copy(singleCurve.getPoint(1));
+    sideGroup.add(capB);
+
+    // Simpan kurva + panjang untuk animasi partikel arus (satu arah,
+    // mengikuti tepat alur SATU benang kawat dari terminal ke terminal)
+    if (!coilGroup.userData.wireCurves) coilGroup.userData.wireCurves = [];
+    coilGroup.userData.wireCurves.push({ side, curve: singleCurve, turns: visualTurns });
+
+    // 4. Terminal block & baut konektor kuningan (binding posts)
+    const termBlock = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.045, 0.07), darkMat);
+    termBlock.position.set(0, termY, 0);
+    sideGroup.add(termBlock);
+
+    for (const bx of [-0.03, 0.03]) {
+      const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.03, 12), brassMat);
+      bolt.position.set(bx, termY + 0.025, 0);
+      sideGroup.add(bolt);
+    }
+
+    // 5. Penyangga: braket pendek flange->terminal + pedestal terminal->tanah.
+    //    PENTING: tidak ada bagian penyangga yang melewati sumbu bore (y=0),
+    //    sehingga probe bebas bergerak di sepanjang sumbu tanpa menembus material.
+    const termTopY = termY + 0.0225;
+    const termBotY = termY - 0.0225;
+    const flangeBotY = -flangeOuterR;
+
+    // Braket penghubung bibir flange bawah ke atas terminal block
+    const bracketH = flangeBotY - termTopY;
+    const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.05, bracketH + 0.02, 0.05), darkMat);
+    bracket.position.set(0, (flangeBotY + termTopY) / 2, 0);
+    sideGroup.add(bracket);
+
+    // Pedestal dari bawah terminal block ke alas tanah
+    const groundY = -(Rw + 0.55) + 0.05;
+    const legH = termBotY - groundY;
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.07, legH, 0.07), darkMat);
+    leg.position.set(0, (termBotY + groundY) / 2, 0);
+    sideGroup.add(leg);
+
+    const baseFoot = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.03, 0.18), darkMat);
+    baseFoot.position.set(0, groundY, 0);
+    sideGroup.add(baseFoot);
+  }
+}
+
+function update3DLight(p){
+  const Rw = p.Rcm*S, dw = p.Dcm*S;
+  const Rm = p.Rcm/100, dm = p.Dcm/100, nI = p.n*p.I;
+  let maxB = 1e-12;
+  const samples = [];
+  for (let i=0;i<ARROWS;i++){
+    const zcm = -50 + 100*i/(ARROWS-1);
+    const b = totalB(Rm, nI, dm, zcm/100);
+    samples.push({zcm, b}); if (b>maxB) maxB=b;
+  }
+  samples.forEach((s,i)=>{
+    const x = s.zcm*S;
+    const len = 0.08 + 0.55*(s.b/maxB);
+    arrows[i].position.set(x - len/2, 0.02, 0);
+    arrows[i].setLength(len, 0.09, 0.05);
+    tmpC.copy(cLow).lerp(cHigh, maxB>0 ? s.b/maxB : 0);
+    arrows[i].setColor(tmpC);
+  });
+  // probe
+  probeGroup.position.set(p.zcm*S, 0.02, 0);
+
+  // papan alas: menopang kedua kaki dudukan (lebar fixed, tinggi mengikuti R)
+  const groundY = -(Rw + 0.55) + 0.05;
+  board.position.set(0, groundY - 0.015 - 0.02, 0);
+}
+
+// Rebuild berat (TubeGeometry + tracing eliptik): hanya saat parameter
+// geometri (n/R/d) berubah, dan di-debounce agar geseran slider mulus.
+function heavyRebuild(p){
+  const Rw = p.Rcm*S, dw = p.Dcm*S;
+  rebuildCoils(p);
+  buildCurrentParticles(Rw, dw);
+  buildFieldLines(p);
+  buildDimensions(p, Rw, dw);
+}
+
+let heavyTimer = null, pendingHeavy = null, pendingKind = 'full';
+// Kunci geometri: n|R butuh rebuild penuh; d saja = translasi grup (murah).
+const geoCache = { fk: null, d: null };
+
+// Geser jarak d murni translasi: pindahkan grup kumparan + partikel,
+// tanpa menyentuh geometri sama sekali (60 fps bahkan saat drag).
+function applyCoilPositions(dw){
+  const coilSides = coilGroup.userData.sides || {};
+  const curSides = (currentGroup.userData && currentGroup.userData.sides) || {};
+  for (const side of [-1, 1]) {
+    if (coilSides[side]) coilSides[side].position.x = side * dw / 2;
+    if (curSides[side]) curSides[side].position.x = side * dw / 2;
+  }
+}
+
+function scheduleHeavy(p){
+  const fk = p.n + '|' + p.Rcm;
+  if (geoCache.fk == null) { // render pertama: langsung, tanpa tunda
+    geoCache.fk = fk; geoCache.d = p.Dcm;
+    heavyRebuild({ ...p });
+    return;
+  }
+  if (fk !== geoCache.fk) { // n/R berubah: rebuild penuh (debounce)
+    pendingHeavy = { ...p }; pendingKind = 'full';
+    applyCoilPositions(p.Dcm * S); // kumparan ikut bergeser seketika
+    if (!heavyTimer) heavyTimer = setTimeout(runHeavy, 150);
+    return;
+  }
+  if (p.Dcm !== geoCache.d) { // hanya d berubah: translasi instan
+    geoCache.d = p.Dcm;
+    applyCoilPositions(p.Dcm * S);
+    pendingHeavy = { ...p }; pendingKind = 'lines'; // garis+dims menyusul
+    if (!heavyTimer) heavyTimer = setTimeout(runHeavy, 150);
+  }
+}
+
+function runHeavy(){
+  heavyTimer = null;
+  const q = pendingHeavy; pendingHeavy = null;
+  if (!q) return;
+  const fk = q.n + '|' + q.Rcm;
+  if (pendingKind === 'full' || fk !== geoCache.fk) {
+    geoCache.fk = fk; geoCache.d = q.Dcm;
+    heavyRebuild(q);
+  } else {
+    // Jalur cepat d: fisika garis medan + label dimensi ikut jarak baru.
+    // Geometri kumparan & partikel TIDAK dibangun ulang (sudah ditranslasi).
+    buildFieldLines(q);
+    buildDimensions(q, q.Rcm * S, q.Dcm * S);
+    applyCoilPositions(q.Dcm * S);
+  }
+  update3DLight(q);
+}
+
+function update3D(p, Bc){
+  update3DLight(p);   // ringan: selalu langsung (label, panah, probe ikut slider)
+  scheduleHeavy(p);   // berat: debounce 150 ms setelah geseran berhenti
+}
+
+// ---------- chart 2D ----------
+function drawChart(p){
+  const c = $('chartCanvas'), ctx = c.getContext('2d');
+  const W=c.width,H=c.height,padL=62,padR=14,padT=14,padB=34;
+  ctx.clearRect(0,0,W,H);
+  const Rm=p.Rcm/100, dm=p.Dcm/100, nI=p.n*p.I, N=140;
+  let maxB=0; const Bs=[];
+  for(let i=0;i<=N;i++){ const z=-50+100*i/N, b=totalB(Rm,nI,dm,z/100); Bs.push(b); if(b>maxB)maxB=b; }
+  if(maxB<=0)maxB=1e-9;
+  const X=z=>padL+(z+50)/100*(W-padL-padR), Y=b=>(H-padB)-(b/maxB)*((H-padB)-padT);
+  ctx.strokeStyle="#e2e8f0"; ctx.fillStyle="#64748b"; ctx.font="12px system-ui";
+  for(let g=0;g<=4;g++){ const y=Y(maxB*g/4); ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke(); ctx.fillText((maxB*g/4*1000).toFixed(2)+"mT",4,y+4); }
+  for(const z of [-50,-25,0,25,50]) ctx.fillText(z+"cm",X(z)-12,H-12);
+  ctx.strokeStyle="#b37212"; ctx.setLineDash([5,4]);
+  for(const zc of [-p.Dcm/2,p.Dcm/2]){ ctx.beginPath();ctx.moveTo(X(zc),padT);ctx.lineTo(X(zc),H-padB);ctx.stroke(); }
+  ctx.setLineDash([]); ctx.strokeStyle="#132741"; ctx.lineWidth=3; ctx.beginPath();
+  Bs.forEach((b,i)=>{ const x=X(-50+100*i/N),y=Y(b); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.stroke();
+  const bp=totalB(Rm,nI,dm,p.zcm/100);
+  ctx.fillStyle="#ef4444"; ctx.beginPath(); ctx.arc(X(p.zcm),Y(bp),6,0,Math.PI*2); ctx.fill();
+}
+
+// ---------- update ----------
+function update(skip3D = false){
+  const p = params();
+  $('vI').textContent=p.I.toFixed(1)+" A"; $('vn').textContent=p.n.toFixed(0);
+  $('vR').textContent=p.Rcm.toFixed(1)+" cm"; $('vd').textContent=p.Dcm.toFixed(1)+" cm";
+  $('vz').textContent=p.zcm.toFixed(1)+" cm";
+  const B = totalB(p.Rcm/100, p.n*p.I, p.Dcm/100, p.zcm/100);
+  const Bc = totalB(p.Rcm/100, p.n*p.I, p.Dcm/100, 0);
+  $('bValue').textContent = fmtB(B);
+  $('bCenter').textContent = fmtB(Bc);
+  $('bNI').textContent = (p.n*p.I).toFixed(0) + " A·lilit";
+  $('bDetail').textContent = "Visual 3D: " + Math.max(5, Math.round(p.n/10)) + " lilitan/kumparan (skala 1:10)"
+    + " | R=" + p.Rcm.toFixed(1) + "cm d=" + p.Dcm.toFixed(1) + "cm";
+
+  const st=$('helmStatus'), rel=Math.abs(p.Dcm-p.Rcm)/p.Rcm;
+  if(rel<0.03){ st.className="ok"; st.textContent="\u2713 Helmholtz optimal (d \u2248 R)"; }
+  else { st.className="warn"; st.textContent="Belum Helmholtz: set d = R ("+p.Rcm.toFixed(1)+" cm)"; }
+  
+  if (!skip3D) {
+    update3D(p, Bc);
+  } else {
+    probeGroup.position.set(p.zcm*S, 0.02, 0);
+  }
+  drawChart(p);
+  renderTable(p);
+}
+
+// ---------- Interaktivitas Drag & Drop Probe 3D ----------
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const dragPlane = new THREE.Plane();
+const planeIntersect = new THREE.Vector3();
+let isDraggingProbe = false;
+
+function getCanvasRelativeCoords(e) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  return {
+    x: ((e.clientX - rect.left) / rect.width) * 2 - 1,
+    y: -((e.clientY - rect.top) / rect.height) * 2 + 1
+  };
+}
+
+renderer.domElement.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0) return;
+  const coords = getCanvasRelativeCoords(e);
+  mouse.x = coords.x; mouse.y = coords.y;
+  raycaster.setFromCamera(mouse, camera);
+
+  const intersects = raycaster.intersectObjects([probeMesh, probeRing], true);
+  if (intersects.length > 0) {
+    isDraggingProbe = true;
+    controls.enabled = false;
+    const normal = new THREE.Vector3();
+    camera.getWorldDirection(normal).negate();
+    dragPlane.setFromNormalAndCoplanarPoint(normal, probeGroup.position);
+    renderer.domElement.style.cursor = 'ew-resize';
+  }
+});
+
+window.addEventListener('pointermove', (e) => {
+  const coords = getCanvasRelativeCoords(e);
+  mouse.x = coords.x; mouse.y = coords.y;
+
+  if (isDraggingProbe) {
+    raycaster.setFromCamera(mouse, camera);
+    if (raycaster.ray.intersectPlane(dragPlane, planeIntersect)) {
+      let newZcm = planeIntersect.x / S;
+      newZcm = Math.max(-50, Math.min(50, newZcm));
+      newZcm = Math.round(newZcm * 2) / 2;
+      els.z.value = newZcm;
+      update(true);
+    }
+  } else {
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects([probeMesh, probeRing], true);
+    if (intersects.length > 0) {
+      renderer.domElement.style.cursor = 'grab';
+    } else {
+      renderer.domElement.style.cursor = 'default';
+    }
+  }
+});
+
+window.addEventListener('pointerup', () => {
+  if (isDraggingProbe) {
+    isDraggingProbe = false;
+    controls.enabled = true;
+    renderer.domElement.style.cursor = 'default';
+    update(false);
+  }
+});
+
+// ---------- tabel data + unduhan ----------
+// Tabel hanya PRATINJAU: tiap 5 cm + baris probe bila belum tercakup.
+// File unduhan (CSV/XLS) selalu berisi data PENUH sesuai langkah terpilih.
+function fullRows(p, step) {
+  const Rm = p.Rcm / 100, dm = p.Dcm / 100, nI = p.n * p.I;
+  const rows = [];
+  const count = Math.round(100 / step);
+  for (let i = 0; i <= count; i++) {
+    const zr = Math.round((-50 + i * step) * 10) / 10;
+    rows.push({ z: zr, B: totalB(Rm, nI, dm, zr / 100) });
+  }
+  return rows;
+}
+
+function renderTable(p) {
+  const step = parseFloat($('selStep').value);
+  const rows = fullRows(p, step);
+  const shown = rows.slice(0, 10);
+  const rest = rows.length - shown.length;
+  const tb = $('tblBody');
+  tb.innerHTML = shown.map(r =>
+    `<tr><td>${r.z.toFixed(1)}</td>` +
+    `<td>${(r.B * 1000).toFixed(3)}</td></tr>`
+  ).join('') + (rest > 0
+    ? `<tr class="more-row"><td colspan="2">+ ${rest} baris lagi, klik unduh xlsx di bawah</td></tr>`
+    : '');
+}
+
+// Excel .xlsx asli via SheetJS (CDN) — butuh internet saat tombol diklik,
+// sama seperti three.js di halaman ini.
+function downloadXlsx() {
+  if (typeof XLSX === 'undefined') {
+    alert('Pustaka Excel (SheetJS CDN) gagal dimuat. Periksa koneksi internet lalu coba lagi.');
+    return;
+  }
+  const p = params(), step = parseFloat($('selStep').value);
+  const rows = fullRows(p, step);
+  const aoa = [
+    ['Simulasi Helmholtz Coil — B(z) sepanjang sumbu'],
+    [`I=${p.I} A; n=${p.n}; R=${p.Rcm} cm; d=${p.Dcm} cm; langkah=${step} cm`],
+    [],
+    ['z (cm)', 'B (mT)']
+  ];
+  for (const r of rows) aoa.push([r.z, r.B * 1000]);
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{ wch: 10 }, { wch: 14 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Bz vs z');
+  XLSX.writeFile(wb, 'helmholtz-Bz-R' + p.Rcm + '-d' + p.Dcm + '-step' + step + '.xlsx');
+}
+
+$('btnHelm').addEventListener('click', ()=>{ els.D.value=els.R.value; update(); });
+$('btnXlsx').addEventListener('click', downloadXlsx);
+// Tombol reset: kembalikan kamera + target ke posisi awal
+$('resetBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  camera.position.copy(CAM_HOME);
+  controls.target.copy(TGT_HOME);
+  controls.update();
+});
+// Ikon info: klik untuk tampil/sembunyi panduan navigasi 3D
+$('infoBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const pop = $('infoPop');
+  const open = pop.classList.toggle('show');
+  $('infoBtn').setAttribute('aria-expanded', open);
+});
+document.addEventListener('click', (e) => {
+  const pop = $('infoPop');
+  if (pop && !pop.contains(e.target)) pop.classList.remove('show');
+});
+$('selStep').addEventListener('change', () => renderTable(params()));
+Object.values(els).forEach(el=>el.addEventListener('input', () => update()));
+// Tombol pill horizontal: klik = toggle tampil/sembunyi lapisan 3D.
+// Hanya visibilitas + bangun ulang lapisan yg baru dinyalakan (murah);
+// TIDAK pernah rebuild kumparan penuh di sini.
+function applyToggles() {
+  const p = params(), Rw = p.Rcm*S, dw = p.Dcm*S;
+  linesGroup.visible = toggles.lines.checked;
+  currentGroup.visible = toggles.current.checked;
+  dimensionGroup.visible = toggles.dimensions.checked;
+  gridHelper.visible = toggles.grid.checked;
+  if (toggles.lines.checked) buildFieldLines(p);
+  if (toggles.current.checked) buildCurrentParticles(Rw, dw);
+  if (toggles.dimensions.checked) buildDimensions(p, Rw, dw);
+  update3DLight(p);
+}
+[['tglGrid','grid'],['tglLines','lines'],['tglCurrent','current'],['tglDimensions','dimensions']].forEach(([btnId, key]) => {
+  const btn = $(btnId);
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    toggles[key].checked = !toggles[key].checked;
+    btn.classList.toggle('on', toggles[key].checked);
+    btn.classList.toggle('off', !toggles[key].checked);
+    btn.setAttribute('aria-pressed', toggles[key].checked);
+    applyToggles();
+  });
+});
+
+addEventListener('resize', ()=>{
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  camera.aspect=container.clientWidth/container.clientHeight; camera.updateProjectionMatrix();
+});
+
+update();
+
+let lastTime = performance.now();
+(function animate(){
+  requestAnimationFrame(animate);
+  const now = performance.now();
+  const dt = (now - lastTime) / 1000;
+  lastTime = now;
+
+  controls.update();
+  probeRing.rotation.x += 0.02;
+
+  // Animasi partikel arus mengalir di sepanjang SATU benang kawat
+  if (toggles.current.checked && currentParticles.length > 0) {
+    const currentSpeed = 0.012; // fraksi panjang kurva per detik (5x lebih lambat)
+    for (let i = 0; i < currentParticles.length; i++) {
+      const pt = currentParticles[i];
+      pt.t = (pt.t + currentSpeed * dt) % 1.0;
+      const pos = pt.curve.getPointAt(pt.t);
+      pt.mesh.position.copy(pos);
+    }
+  }
+
+  renderer.render(scene,camera);
+})();
+</script>
+</body>
+</html>

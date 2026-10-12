@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulator Magnetoimpedansi Sensor Nanopartikel</title>
+<style>
+:root{--bg:#f3f5f8;--card:#fff;--ink:#1c2430;--mut:#667085;--line:#e4e8ee;--acc:#0b6bcb;--red:#d92d20}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+.wrap{max-width:1560px;margin:0 auto;padding:0 20px 40px}
+header.top{padding:24px 0 4px}
+h1{font-size:22px;margin:0 0 4px;letter-spacing:-.01em}
+h2{font-size:15px;margin:0 0 10px}
+.sub{color:var(--mut);margin:0;max-width:960px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.layout{display:grid;grid-template-columns:380px 1fr;gap:16px;margin-top:16px;align-items:start}
+@media(max-width:1060px){.layout{grid-template-columns:1fr}}
+aside{display:flex;flex-direction:column;gap:12px}
+details.card{padding:12px 16px}
+details.card summary{cursor:pointer;font-weight:600;font-size:14px}
+details.card[open] summary{margin-bottom:10px}
+.ctl{margin-bottom:9px}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:#344054}
+.ctl output{font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);white-space:nowrap}
+input[type=range]{width:100%;accent-color:var(--acc);margin:2px 0 0}
+select,input[type=number],input[type=text]{width:100%;padding:6px 8px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;font:inherit;color:var(--ink)}
+.field{margin-bottom:9px}
+.field>span{display:block;font-size:12.5px;color:#344054;margin-bottom:2px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.chk{display:flex;align-items:center;gap:8px;font-size:12.5px;margin:4px 0 9px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;font-weight:600;font-size:13px;padding:8px 12px;border-radius:9px;border:1px solid #d0d5dd;background:#fff;color:var(--ink);cursor:pointer}
+button:hover{background:#f5f7fa}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+button.pri:hover{background:#095aad}
+.srow{display:grid;grid-template-columns:14px 1fr 78px 16px 28px;gap:6px;align-items:center;margin-bottom:6px}
+.srow .dot{width:12px;height:12px;border-radius:3px;display:block}
+.srow .x{padding:2px 0;font-size:15px;line-height:1;border-radius:7px}
+.srow .u{font-size:12px;color:var(--mut)}
+.live{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:10px}
+.chip{border:1px solid var(--line);border-radius:10px;padding:6px 10px;background:#fafbfc}
+.chip span{display:block;font-size:11.5px;color:var(--mut)}
+.chip b{font-size:15px;font-variant-numeric:tabular-nums}
+.obsrow{display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap}
+.obsrow input[type=range]{flex:1;min-width:200px}
+.obsrow select{width:auto;min-width:150px}
+.main{display:flex;flex-direction:column;gap:16px}
+.pair{display:grid;grid-template-columns:1fr 54px 1fr;gap:6px;align-items:center}
+@media(max-width:900px){.pair{grid-template-columns:1fr}.arrowcol{display:none}}
+.chartbox{position:relative;width:100%;height:380px}
+.chartbox.sm{height:300px}
+.chartbox svg{display:block;max-width:100%}
+.tip{position:absolute;pointer-events:none;background:rgba(28,36,48,.94);color:#fff;padding:5px 9px;border-radius:7px;font-size:12px;white-space:nowrap;z-index:5;transform:translate(10px,-110%)}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px;margin-top:16px}
+.note{color:var(--mut);font-size:12.5px;margin:8px 0 0}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:600;color:#344054;background:#fafbfc;font-size:12px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:12px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:#fafbfc}
+.stat span{display:block;font-size:11.5px;color:var(--mut)}
+.stat b{font-size:16px;font-variant-numeric:tabular-nums}
+.stat small{color:var(--mut);font-weight:500;font-size:12px}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-weight:600;font-size:12px}
+.ok{background:#e6f6dc;color:#2d6a0f}.mid{background:#fff3d6;color:#8a5a00}.bad{background:#fde7e5;color:#a3200f}.neu{background:#eef0f3;color:#475467}
+.theory h3{font-size:14px;margin:18px 0 6px}.theory p{margin:6px 0;max-width:1100px}.eq{font-family:"Times New Roman",Times,Georgia,serif;font-size:16px;background:#fafbfc;border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin:8px 0;display:flex;justify-content:space-between;gap:16px;overflow-x:auto}.eq .en{color:var(--mut);white-space:nowrap}.gap{display:inline-block;width:1.4em}.theory ul{margin:6px 0 0 18px;padding:0}.theory li{margin-bottom:5px}.explain ul{margin:6px 0 0 18px;padding:0}.explain li{margin-bottom:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>Simulator Teoretis Magnetoimpedansi Multilayer untuk Sensing Nanopartikel Magnetik</h1>
+  <p class="sub">Kurva dihitung dari persamaan Maxwell dan persamaan Landau Lifshitz Gilbert, tanpa disetel ke data eksperimen. Atur sensor multilayer, kumparan Helmholtz, bahan nanopartikel, dan massanya, lalu baca teori dan persamaannya di bagian akhir halaman. Semua perhitungan berjalan di peramban tanpa instalasi dan tanpa sambungan internet.</p>
+</header>
+
+<div class="card" style="margin-top:14px">
+  <svg id="schem" viewBox="0 0 1140 290" width="100%" role="img" aria-label="Skema pengukuran magnetoimpedansi">
+    <defs>
+      <linearGradient id="cu" x1="0" x2="1"><stop offset="0" stop-color="#a8431f"/><stop offset=".5" stop-color="#e48f58"/><stop offset="1" stop-color="#8f3b1c"/></linearGradient>
+      <marker id="arr" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#1a8fa8"/></marker>
+    </defs>
+    <g font-family="system-ui, Arial, sans-serif">
+    <!-- catu daya -->
+    <rect x="14" y="108" width="112" height="78" rx="8" fill="#e6e9ee" stroke="#98a2b3" stroke-width="2"/>
+    <text x="70" y="132" text-anchor="middle" font-size="12" font-weight="700">Catu daya arus</text>
+    <rect x="28" y="142" width="84" height="26" rx="4" fill="#111"/>
+    <text id="psI" x="70" y="160" text-anchor="middle" font-size="14" font-weight="700" fill="#6ee06e">0.000 A</text>
+    <path d="M126 140 H170 V170 M126 156 H150 V212 H395 V170" fill="none" stroke="#444" stroke-width="2"/>
+    <!-- kumparan -->
+    <g>
+      <ellipse cx="205" cy="150" rx="26" ry="82" fill="none" stroke="#d8c293" stroke-width="20"/>
+      <ellipse class="coilc" cx="205" cy="150" rx="26" ry="82" fill="none" stroke="url(#cu)" stroke-width="11"/>
+      <ellipse cx="395" cy="150" rx="26" ry="82" fill="none" stroke="#d8c293" stroke-width="20"/>
+      <ellipse class="coilc" cx="395" cy="150" rx="26" ry="82" fill="none" stroke="url(#cu)" stroke-width="11"/>
+    </g>
+    <text x="300" y="276" text-anchor="middle" font-size="13" font-weight="700">Kumparan Helmholtz</text>
+    <g id="hbG"><line id="harrow" x1="230" y1="46" x2="370" y2="46" stroke="#1a8fa8" stroke-width="3" marker-end="url(#arr)"/></g>
+    <text x="300" y="32" text-anchor="middle" font-size="17" font-style="italic" font-weight="700" fill="#1a8fa8">H</text>
+    <!-- sensor multilayer -->
+    <rect x="262" y="172" width="76" height="16" rx="2" fill="#2d8a4e"/>
+    <rect x="272" y="164" width="56" height="4" fill="#8ea4c4" stroke="#5b7499" stroke-width=".6"/>
+    <rect x="272" y="168" width="56" height="4" fill="#d98c4a"/>
+    <rect x="272" y="172" width="56" height="4" fill="#8ea4c4" stroke="#5b7499" stroke-width=".6" transform="translate(0 0)"/>
+    <g id="parts" fill="#5b3a1e"></g>
+    <g transform="translate(300,96) rotate(18)"><rect x="-5" y="0" width="10" height="38" rx="4" fill="#d6e8f6" stroke="#6a8ca8"/><rect x="-7" y="-14" width="14" height="14" rx="6" fill="#c0392b"/><path d="M-3,38 L3,38 L0,52 Z" fill="#8aa7bd"/></g>
+    <text x="300" y="206" text-anchor="middle" font-size="11" fill="#344054">Sensor multilayer</text>
+    <!-- kabel ke analisator -->
+    <path d="M338 176 H470 M338 180 H470" stroke="#111" stroke-width="2" fill="none"/>
+    <rect x="470" y="104" width="190" height="96" rx="8" fill="#b9ecfb" stroke="#8ccbe0" stroke-width="2"/>
+    <text x="565" y="126" text-anchor="middle" font-size="13" font-weight="700">Analisator impedansi</text>
+    <rect x="484" y="136" width="162" height="50" rx="4" fill="#0f1b26"/>
+    <text id="zDisp" x="565" y="157" text-anchor="middle" font-size="16" font-weight="700" fill="#7ee0ff">0.000 ohm</text>
+    <text id="fDisp" x="565" y="176" text-anchor="middle" font-size="12" fill="#9bd3e8">50 MHz</text>
+    <path d="M660 152 H730" stroke="#111" stroke-width="2.5" fill="none"/>
+    <!-- PC -->
+    <rect x="730" y="52" width="200" height="130" rx="7" fill="#fff" stroke="#5a5f66" stroke-width="6"/>
+    <text x="830" y="74" text-anchor="middle" font-size="12" font-weight="700">Rasio magnetoimpedansi</text>
+    <rect x="752" y="84" width="156" height="78" fill="#fbfcfe" stroke="#d0d5dd"/>
+    <path id="pcCurve" d="" fill="none" stroke="#1c2bf0" stroke-width="2"/>
+    <circle id="pcDot" cx="-10" cy="-10" r="4.5" fill="#e23434"/>
+    <path d="M712 182 H948 L930 206 H730 Z" fill="#c9ced6" stroke="#5a5f66" stroke-width="2"/>
+    <text x="830" y="232" text-anchor="middle" font-size="13" font-weight="700">Komputer Pribadi (PC)</text>
+    </g>
+  </svg>
+  <div class="live">
+    <div class="chip"><span>Medan terpasang H</span><b id="lvH">0 mT</b></div>
+    <div class="chip"><span>Arus kumparan I</span><b id="lvI">0 A</b></div>
+    <div class="chip"><span>Modulus impedansi</span><b id="lvZ">0 ohm</b></div>
+    <div class="chip"><span>Rasio magnetoimpedansi</span><b id="lvM">0 %</b></div>
+    <div class="chip"><span>Massa nanopartikel</span><b id="lvMass">0 g</b></div>
+  </div>
+  <div class="obsrow">
+    <select id="obsRow" aria-label="Sampel yang diamati"></select>
+    <button id="play" class="pri" type="button">Putar sapuan</button>
+    <input type="range" id="obs" min="0" max="10" step="1" value="0" aria-label="Titik pengamatan">
+    <b id="obsLbl" style="font-size:13px"></b>
+  </div>
+</div>
+
+<div class="layout">
+<aside>
+ <form id="ctlForm" class="card" style="padding:12px 16px" onsubmit="return false">
+  <div class="btns">
+    <button type="button" id="rerun" class="pri">Ukur ulang dengan derau baru</button>
+    <button type="reset" id="reset">Atur ulang semua</button>
+  </div>
+  <div class="btns" style="margin-top:8px">
+    <button type="button" id="dlCsv">Unduh CSV</button>
+    <button type="button" id="dlPng">Unduh grafik PNG</button>
+  </div>
+ </form>
+
+  <details class="card" open>
+  <summary>Sampel dan massa nanopartikel</summary>
+  <div id="rows"></div>
+  <div class="btns" style="margin-bottom:10px">
+    <button type="button" id="addRow">Tambah sampel</button>
+    <button type="button" id="figRows">Contoh 0, 0.1, dan 0.3 gram</button>
+  </div>
+  <div class="field"><span>Bahan nanopartikel</span>
+   <select id="preset" form="ctlForm"></select></div>
+  <div class="field"><span>Jenis respons magnetik partikel</span>
+   <select id="mtype" form="ctlForm">
+    <option value="none">Tidak magnetik</option>
+    <option value="dia">Diamagnetik linear</option>
+    <option value="para">Paramagnetik linear</option>
+    <option value="sp">Superparamagnetik dengan relaksasi Néel</option>
+    <option value="fm">Feromagnetik terblokir Stoner Wohlfarth</option>
+   </select></div>
+  <div class="row3">
+   <div class="field"><span>Ms partikel (kA/m)</span><input type="number" id="mMsp" step="any" form="ctlForm"></div>
+   <div class="field"><span>Diameter (nm)</span><input type="number" id="md" step="any" form="ctlForm"></div>
+   <div class="field"><span>Anisotropi K (kJ/m³)</span><input type="number" id="mK" step="any" form="ctlForm"></div>
+   <div class="field"><span>τ0 Néel (ns)</span><input type="number" id="mtau0" step="any" form="ctlForm"></div>
+   <div class="field"><span>Redaman partikel</span><input type="number" id="malphaP" step="any" form="ctlForm"></div>
+   <div class="field"><span>χ volume SI</span><input type="number" id="mchiV" step="any" form="ctlForm"></div>
+   <div class="field"><span>Massa jenis (g/cm³)</span><input type="number" id="mrho" step="any" form="ctlForm"></div>
+   <div class="field"><span>Fraksi volume lapisan</span><input type="number" id="mpf" step="0.01" value="0.2" form="ctlForm"></div>
+   <div class="field"><span>Luas sebaran (cm²)</span><input type="number" id="mAc" step="any" value="20" form="ctlForm"></div>
+   <div class="field"><span>Faktor sebaran dipolar</span><input type="number" id="mCd" step="0.01" value="0.1" form="ctlForm"></div>
+   <div class="field"><span>Suhu (K)</span><input type="number" id="mT" step="1" value="300" form="ctlForm"></div>
+  </div>
+  <p class="note">Nilai bahan adalah nilai tipikal literatur dan bukan hasil kalibrasi ke data tertentu. Massa diubah menjadi tebal lapisan melalui massa jenis, fraksi volume, dan luas sebaran. Ubah semuanya sesuai sampel Anda.</p>
+ </details>
+
+ <details class="card" open>
+  <summary>Sensor multilayer F, Cu, F</summary>
+  <div class="field"><span>Bahan lapisan magnetik</span><select id="sensPreset" form="ctlForm"></select></div>
+  <div class="field"><span>Arah sumbu mudah terhadap arus dan medan</span>
+   <select id="axis" form="ctlForm"><option value="long" selected>Longitudinal, satu puncak di sekitar medan nol</option><option value="trans">Transversal, dua puncak di sekitar plus minus Hk</option></select></div>
+  <div class="row3">
+   <div class="field"><span>μ0Ms (T)</span><input type="number" id="sMs" step="any" form="ctlForm"></div>
+   <div class="field"><span>Redaman Gilbert</span><input type="number" id="salpha" step="any" form="ctlForm"></div>
+   <div class="field"><span>ΔH0 (mT)</span><input type="number" id="sdH0" step="any" form="ctlForm"></div>
+   <div class="field"><span>σ magnetik (MS/m)</span><input type="number" id="ssigF" step="any" form="ctlForm"></div>
+   <div class="field"><span>σ Cu (MS/m)</span><input type="number" id="ssigC" step="any" form="ctlForm"></div>
+  </div>
+  <div id="g_sensor"></div>
+ </details>
+
+<details class="card" open>
+  <summary>Kumparan Helmholtz dan sapuan medan</summary>
+  <div id="g_meas"></div>
+  <label class="chk"><input type="checkbox" id="showDown" checked form="ctlForm"> Tampilkan sapuan turun</label>
+  <label class="chk"><input type="checkbox" id="showModel" form="ctlForm"> Tampilkan kurva model tanpa derau</label>
+  <p class="note" id="coilNote"></p>
+ </details>
+</aside>
+
+<div class="main">
+ <div class="card">
+  <h2>Respons magnetoimpedansi sebagai kinerja sistem multilayer untuk sensing nanopartikel</h2>
+  <div class="pair">
+    <div class="chartbox" id="cFull"></div>
+    <div class="arrowcol"><svg viewBox="0 0 54 90" width="54" height="90" aria-hidden="true"><path d="M3 28 H28 V8 L50 45 L28 82 V62 H3 Z" fill="#fff" stroke="#1c2430" stroke-width="1.6"/></svg></div>
+    <div class="chartbox" id="cZoom"></div>
+  </div>
+  <p class="note">Rasio magnetoimpedansi dihitung dari selisih modulus impedansi terhadap nilai pada medan maksimum. Penanda belah ketupat menunjukkan data terukur dengan derau dan jitter medan, dan garis putus menghubungkan titik tiap sapuan.</p>
+ </div>
+ <div class="card">
+  <h2>Ringkasan hasil</h2>
+  <div id="tbl"></div>
+  <div id="stats" class="stats"></div>
+ </div>
+</div>
+</div>
+
+<div class="grid3">
+  <div class="card"><h2>Komponen impedansi terhadap medan</h2><div class="chartbox sm" id="cComp"></div>
+    <p class="note" id="compNote"></p></div>
+  <div class="card"><h2>Puncak MIR terhadap frekuensi</h2><div class="chartbox sm" id="cFreq"></div>
+    <p class="note">Garis tegak menandai frekuensi kerja yang dipilih. Gunakan grafik ini untuk mencari frekuensi dengan perbedaan antar sampel terbesar.</p></div>
+  <div class="card"><h2>Kurva kalibrasi puncak MIR terhadap massa</h2><div class="chartbox sm" id="cCal"></div>
+    <p class="note">Garis adalah model tanpa derau dan titik adalah puncak data terukur pada tiap sampel.</p></div>
+</div>
+
+<div class="card theory" style="margin-top:16px">
+  <h2>Teori dan persamaan yang dipakai simulator</h2>
+  <p>Seluruh kurva dihitung dari fisika dasar tanpa penyesuaian ke data tertentu. Sensor dimodelkan secara eksak dari persamaan Maxwell dengan permeabilitas lapisan magnetik yang berasal dari persamaan Landau Lifshitz Gilbert. Nanopartikel dimasukkan melalui tiga mekanisme fisis, yaitu kopling dinamis ke medan frekuensi tinggi, medan sebar rata rata, dan sebaran medan sebar dipolar. Notasi memakai satuan SI dan medan dinyatakan sebagai rapat fluks <i>μ</i><sub>0</sub><i>H</i> dalam tesla atau mT.</p>
+
+  <h3>1. Medan kumparan Helmholtz dan definisi MIR</h3>
+  <p>Dua kumparan identik berjarak sama dengan jari jari <i>R</i> menghasilkan medan hampir seragam di pusat. Arus tiap titik ukur diperoleh dengan membalik persamaan ini.</p>
+  <div class="eq"><span><i>B</i> = (4/5)<sup>3/2</sup> <i>μ</i><sub>0</sub> <i>N I</i> / <i>R</i> ≈ 0.7155 <i>μ</i><sub>0</sub> <i>N I</i> / <i>R</i></span><span class="en">(1)</span></div>
+  <p>Rasio magnetoimpedansi didefinisikan terhadap impedansi pada medan maksimum sapuan.</p>
+  <div class="eq"><span>MIR(<i>H</i>) = 100 × [ |<i>Z</i>(<i>H</i>)| − |<i>Z</i>(<i>H</i><sub>maks</sub>)| ] / |<i>Z</i>(<i>H</i><sub>maks</sub>)|  persen</span><span class="en">(2)</span></div>
+
+  <h3>2. Impedansi trilayer F, Cu, F dari persamaan Maxwell</h3>
+  <p>Arus sinusoidal berfrekuensi <i>ω</i> mengalir sepanjang sumbu <i>x</i> pada strip berlapis simetris dengan inti tembaga setebal 2<i>d</i><sub>c</sub> dan dua lapisan magnetik setebal <i>t</i><sub>f</sub>. Untuk lebar strip <i>w</i> jauh lebih besar daripada tebalnya, medan listrik <i>E</i><sub>x</sub>(<i>z</i>) pada tiap lapisan memenuhi persamaan difusi berikut.</p>
+  <div class="eq"><span>d<sup>2</sup><i>E</i><sub>x</sub>/d<i>z</i><sup>2</sup> = <i>k</i><sup>2</sup> <i>E</i><sub>x</sub> <span class="gap"></span><i>k</i> = √( j<i>ω μ</i><sub>0</sub> <i>μ σ</i> ) = (1 + j)/<i>δ</i> <span class="gap"></span><i>δ</i> = √( 2 / (<i>ω μ</i><sub>0</sub> <i>μ σ</i>) )</span><span class="en">(3)</span></div>
+  <p>Karena strip simetris, medan di inti Cu berbentuk kosinus hiperbolik. Di lapisan magnetik, medan dicari dari kontinuitas <i>E</i><sub>x</sub> dan <i>H</i><sub>y</sub> = (1/j<i>ω μ</i><sub>0</sub><i>μ</i>) d<i>E</i><sub>x</sub>/d<i>z</i> pada antarmuka.</p>
+  <div class="eq"><span><i>E</i><sub>c</sub> = cosh(<i>k</i><sub>c</sub><i>z</i>) <span class="gap"></span><i>E</i><sub>f</sub> = <i>A</i> cosh[<i>k</i><sub>f</sub>(<i>z</i> − <i>d</i><sub>c</sub>)] + <i>B</i> sinh[<i>k</i><sub>f</sub>(<i>z</i> − <i>d</i><sub>c</sub>)]</span><span class="en">(4)</span></div>
+  <div class="eq"><span><i>A</i> = cosh(<i>k</i><sub>c</sub><i>d</i><sub>c</sub>) <span class="gap"></span><i>B</i> = <i>μ k</i><sub>c</sub> sinh(<i>k</i><sub>c</sub><i>d</i><sub>c</sub>) / <i>k</i><sub>f</sub></span><span class="en">(5)</span></div>
+  <p>Impedansi permukaan di muka luar dan impedansi strip sepanjang <i>l</i> mengikuti dari hukum Ampere, yaitu <i>I</i> = 2<i>w H</i><sub>s</sub> dan <i>V</i> = <i>E</i><sub>s</sub> <i>l</i>.</p>
+  <div class="eq"><span><i>Z</i> = (<i>l</i> / 2<i>w</i>) · <i>E</i><sub>s</sub> / <i>H</i><sub>s</sub> <span class="gap"></span><i>H</i><sub>s</sub> = [<i>k</i><sub>f</sub> / (j<i>ω μ</i><sub>0</sub><i>μ</i>)] · [ <i>A</i> sinh(<i>k</i><sub>f</sub><i>t</i><sub>f</sub>) + <i>B</i> cosh(<i>k</i><sub>f</sub><i>t</i><sub>f</sub>) ]</span><span class="en">(6)</span></div>
+  <p>Pemeriksaan batas. Untuk satu bahan homogen, persamaan (6) menjadi rumus klasik <i>Z</i> = <i>R</i><sub>dc</sub> <i>k t</i> coth(<i>k t</i>), dan pada frekuensi rendah <i>Z</i> menuju resistansi DC. Kedua batas ini sudah diuji secara numerik pada simulator.</p>
+  <div class="eq"><span><i>R</i><sub>dc</sub> = <i>l</i> / [ <i>w</i> ( <i>σ</i><sub>c</sub> 2<i>d</i><sub>c</sub> + 2 <i>σ</i><sub>f</sub> <i>t</i><sub>f</sub> ) ]</span><span class="en">(7)</span></div>
+
+  <h3>3. Permeabilitas lapisan magnetik dari persamaan LLG</h3>
+  <p>Dinamika magnetisasi <b>m</b> pada medan efektif <b>H</b><sub>eff</sub> mengikuti persamaan Landau Lifshitz Gilbert dengan rasio giromagnetik <i>γ</i> = 1.7609 × 10<sup>11</sup> rad/(s T).</p>
+  <div class="eq"><span>d<b>m</b>/d<i>t</i> = − <i>γ μ</i><sub>0</sub> <b>m</b> × <b>H</b><sub>eff</sub> + <i>α</i> <b>m</b> × d<b>m</b>/d<i>t</i></span><span class="en">(8)</span></div>
+  <p>Linearisasi di sekitar keseimbangan memakai metode Smit dan Beljers memberi dua medan kekakuan, <i>A</i> untuk simpangan dalam bidang dan <i>B</i> untuk simpangan keluar bidang. Untuk sumbu mudah longitudinal berlaku <i>A</i> = <i>H</i> + <i>H</i><sub>k</sub> dan <i>B</i> = <i>H</i> + <i>H</i><sub>k</sub> + <i>μ</i><sub>0</sub><i>M</i><sub>s</sub>. Untuk sumbu mudah transversal berlaku <i>A</i> = <i>H</i> − <i>H</i><sub>k</sub> dan <i>B</i> = <i>H</i> + <i>μ</i><sub>0</sub><i>M</i><sub>s</sub> bila <i>H</i> ≥ <i>H</i><sub>k</sub>. Bila <i>H</i> lebih kecil daripada <i>H</i><sub>k</sub>, magnetisasi miring dengan cos <i>φ</i> = <i>H</i>/<i>H</i><sub>k</sub> sehingga <i>A</i> = (<i>H</i><sub>k</sub><sup>2</sup> − <i>H</i><sup>2</sup>)/<i>H</i><sub>k</sub>, <i>B</i> = <i>H</i><sub>k</sub> + <i>μ</i><sub>0</sub><i>M</i><sub>s</sub>, dan respons berkurang oleh faktor <i>c</i><sup>2</sup> = (<i>H</i>/<i>H</i><sub>k</sub>)<sup>2</sup>. Kekakuan <i>A</i> yang mengecil di dekat <i>H</i> = <i>H</i><sub>k</sub> menghasilkan dua puncak MI pada kasus transversal.</p>
+  <div class="eq"><span><i>f</i><sub>r</sub> = (<i>γ</i> / 2π) √( <i>A B</i> )</span><span class="en">(9)</span></div>
+  <div class="eq"><span><i>χ</i> = <i>c</i><sup>2</sup> <i>μ</i><sub>0</sub><i>M</i><sub>s</sub> ( <i>B</i> + j<i>Γ</i> ) / [ ( <i>A</i> + j<i>Γ</i> )( <i>B</i> + j<i>Γ</i> ) − (<i>ω</i>/<i>γ</i>)<sup>2</sup> ] <span class="gap"></span><i>μ</i> = 1 + <i>χ</i></span><span class="en">(10)</span></div>
+  <div class="eq"><span><i>Γ</i> = <i>α ω</i>/<i>γ</i> + Δ<i>H</i><sub>0</sub>/2</span><span class="en">(11)</span></div>
+  <p>Pada frekuensi jauh di bawah resonansi, <i>χ</i> menuju nilai statis <i>μ</i><sub>0</sub><i>M</i><sub>s</sub> / <i>A</i>, yaitu <i>μ</i><sub>0</sub><i>M</i><sub>s</sub> / (<i>H</i> + <i>H</i><sub>k</sub>) untuk kasus longitudinal. Inilah sebab puncak runcing di medan nol. Pada sapuan medan, magnetisasi sumbu mudah longitudinal berbalik di <i>H</i> = ±<i>H</i><sub>c</sub>, sehingga kekakuan turun menjadi <i>H</i><sub>k</sub> − <i>H</i> sebelum pembalikan dan puncak sapuan naik dan turun bergeser ke arah berlawanan. Efek ini memberi histeresis kecil pada kurva.</p>
+
+  <h3>4. Respons nanopartikel</h3>
+  <p><b>Superparamagnetik.</b> Untuk partikel bervolume <i>V</i> dan momen <i>m</i> = <i>M</i><sub>s</sub><i>V</i>, magnetisasi rata rata mengikuti fungsi Langevin. Susceptibilitas transversal adalah rasio magnetisasi terhadap medan, dan relaksasi Néel menjadikannya kompleks pada frekuensi ukur.</p>
+  <div class="eq"><span><i>ξ</i> = <i>m B</i> / (<i>k</i><sub>B</sub><i>T</i>) <span class="gap"></span><i>M</i> = <i>M</i><sub>s</sub> <i>L</i>(<i>ξ</i>) <span class="gap"></span><i>L</i>(<i>ξ</i>) = coth <i>ξ</i> − 1/<i>ξ</i></span><span class="en">(12)</span></div>
+  <div class="eq"><span><i>χ</i><sub>⊥</sub> = <i>μ</i><sub>0</sub><i>M</i><sub>s</sub> <i>L</i>(<i>ξ</i>) / <i>B</i> <span class="gap"></span><i>χ</i>(0) = <i>μ</i><sub>0</sub><i>M</i><sub>s</sub><sup>2</sup><i>V</i> / (3<i>k</i><sub>B</sub><i>T</i>)</span><span class="en">(13)</span></div>
+  <div class="eq"><span><i>τ</i><sub>N</sub> = <i>τ</i><sub>0</sub> exp( <i>K V</i> / <i>k</i><sub>B</sub><i>T</i> ) <span class="gap"></span><i>χ</i>(<i>ω</i>) = <i>χ</i><sub>⊥</sub> / (1 + j<i>ω τ</i><sub>N</sub>)</span><span class="en">(14)</span></div>
+  <p><b>Feromagnetik terblokir.</b> Untuk ansambel partikel beranisotropi uniaksial dengan orientasi acak, model Stoner dan Wohlfarth memberi susceptibilitas awal, medan anisotropi, dan medan koersif berikut. Respons dinamis didekati dengan resonansi Landau Lifshitz dan magnetisasi statis dengan fungsi tanh yang bergeser sebesar medan koersif sehingga muncul histeresis.</p>
+  <div class="eq"><span><i>χ</i><sub>i</sub> = <i>μ</i><sub>0</sub><i>M</i><sub>s</sub><sup>2</sup> / (3<i>K</i>) <span class="gap"></span><i>B</i><sub>K</sub> = 2<i>K</i> / <i>M</i><sub>s</sub> <span class="gap"></span><i>B</i><sub>c</sub> ≈ 0.479 <i>B</i><sub>K</sub></span><span class="en">(15)</span></div>
+  <div class="eq"><span><i>M</i> = <i>M</i><sub>s</sub> tanh[ <i>χ</i><sub>i</sub> (<i>B</i> ∓ <i>B</i><sub>c</sub>) / (<i>μ</i><sub>0</sub><i>M</i><sub>s</sub>) ] <span class="gap"></span><i>χ</i>(<i>ω</i>) = <i>χ</i> / [ 1 − (<i>ω</i>/<i>ω</i><sub>r</sub>)<sup>2</sup> + 2j<i>α</i><sub>p</sub> <i>ω</i>/<i>ω</i><sub>r</sub> ] <span class="gap"></span><i>ω</i><sub>r</sub> = <i>γ</i> (<i>B</i><sub>K</sub> + <i>B</i>)</span><span class="en">(16)</span></div>
+  <p><b>Paramagnetik dan diamagnetik.</b> Susceptibilitas volume <i>χ</i><sub>V</sub> dianggap konstan dan nyata, dan magnetisasi sebanding dengan medan.</p>
+
+  <h3>5. Pengaruh nanopartikel pada sensor</h3>
+  <p>Massa <i>m</i> disebar pada luas <i>A</i><sub>c</sub> dengan fraksi volume <i>φ</i> dan massa jenis <i>ρ</i>, sehingga tebal lapisan <i>t</i><sub>p</sub> dapat dihitung. Medan frekuensi tinggi di sekitar strip meluruh pada skala lebar strip, jadi hanya lapisan setebal sekitar <i>λ</i> = <i>w</i>/π yang berinteraksi. Karena itu efek massa menjenuh bila lapisan lebih tebal daripada <i>λ</i>.</p>
+  <div class="eq"><span><i>t</i><sub>p</sub> = <i>m</i> / (<i>ρ φ A</i><sub>c</sub>) <span class="gap"></span><i>t</i><sub>eff</sub> = <i>λ</i> ( 1 − e<sup>−<i>t</i><sub>p</sub>/<i>λ</i></sup> )</span><span class="en">(17)</span></div>
+  <p><b>Mekanisme 1, kopling dinamis.</b> Permeabilitas efektif lapisan campuran dihitung dengan teori medium efektif Maxwell Garnett. Lapisan itu menambah fluks di permukaan strip sehingga menambah impedansi seri.</p>
+  <div class="eq"><span>(<i>μ</i><sub>L</sub> − 1) / (<i>μ</i><sub>L</sub> + 2) = <i>φ</i> (<i>μ</i><sub>p</sub> − 1) / (<i>μ</i><sub>p</sub> + 2) <span class="gap"></span><i>μ</i><sub>p</sub> = 1 + <i>χ</i></span><span class="en">(18)</span></div>
+  <div class="eq"><span>Δ<i>Z</i><sub>p</sub> = j<i>ω μ</i><sub>0</sub> ( <i>μ</i><sub>L</sub> − 1 ) <i>t</i><sub>eff</sub> <i>l</i> / (2<i>w</i>)</span><span class="en">(19)</span></div>
+  <p><b>Mekanisme 2, medan sebar rata rata.</b> Lapisan partikel yang termagnetisasi oleh medan bias menghasilkan medan demagnetisasi yang berlawanan arah. Komponen tangensial medan kontinu pada antarmuka, sehingga sensor merasakan medan efektif yang lebih kecil. Faktor demagnetisasi dalam bidang <i>N</i><sub>in</sub> dihitung untuk spheroid pipih dengan rasio sumbu <i>e</i> = <i>t</i><sub>p</sub>/<i>D</i> dan diameter ekuivalen <i>D</i> = √(4<i>A</i><sub>c</sub>/π).</p>
+  <div class="eq"><span><i>B</i><sub>s</sub> = − <i>N</i><sub>in</sub> <i>φ μ</i><sub>0</sub><i>M</i><sub>p</sub>(<i>H</i>) <span class="gap"></span><i>N</i><sub>in</sub> = (1 − <i>N</i><sub>z</sub>)/2 <span class="gap"></span><i>N</i><sub>z</sub> = [ 1 − <i>e</i> arccos <i>e</i> / √(1 − <i>e</i><sup>2</sup>) ] / (1 − <i>e</i><sup>2</sup>)</span><span class="en">(20)</span></div>
+  <p><b>Mekanisme 3, sebaran medan sebar dipolar.</b> Medan dipol dari partikel berdekatan bervariasi dari titik ke titik. Sensor dengan puncak runcing di medan nol merespons rata rata permeabilitas atas sebaran medan lokal itu, sehingga puncaknya menurun dan melebar. Lebar sebaran diperkirakan dari medan dipol tetangga terdekat, yaitu orde 0.5 <i>φ μ</i><sub>0</sub><i>M</i><sub>s</sub> dikalikan faktor amplitudo momen <i>s</i>. Faktor sebaran dipolar <i>C</i><sub>d</sub> pada panel adalah koreksi untuk perataan oleh kopling pertukaran dan geometri, dan ini adalah suku yang paling tidak pasti pada model.</p>
+  <div class="eq"><span><i>σ</i><sub>s</sub> = <i>C</i><sub>d</sub> <i>φ μ</i><sub>0</sub><i>M</i><sub>s</sub> <i>s</i> <span class="gap"></span><i>Z̄</i> = Σ<sub><i>i</i></sub> <i>w</i><sub><i>i</i></sub> <i>Z</i>( <i>H</i> + <i>B</i><sub>s</sub> + <i>σ</i><sub>s</sub> <i>x</i><sub><i>i</i></sub> )</span><span class="en">(21)</span></div>
+  <p>Rata rata dihitung dengan kuadratur Gauss Hermite tujuh titik. Impedansi total yang diukur adalah jumlah semua suku.</p>
+  <div class="eq"><span><i>Z</i><sub>tot</sub> = <i>Z̄</i> + Δ<i>Z</i><sub>p</sub> + <i>R</i><sub>c</sub> + j<i>ω L</i><sub>p</sub></span><span class="en">(22)</span></div>
+  <p><b>Arah perubahan puncak.</b> Mekanisme 1 cenderung menaikkan puncak MIR bila partikel punya susceptibilitas tinggi di medan nol, seperti partikel superparamagnetik. Mekanisme 3 menurunkan puncak dan dominan untuk partikel terblokir dengan momen beku yang besar. Karena itu tanda perubahan puncak bergantung pada jenis partikel, dan simulator menampilkan hasil bersihnya apa adanya.</p>
+
+  <h3>6. Derau dan batas deteksi</h3>
+  <p>Derau relatif impedansi <i>σ</i><sub>Z</sub> muncul pada pembacaan titik dan pembacaan acuan. Derau MIR pada puncak dan batas deteksi massa dengan sensitivitas awal <i>S</i> = dMIR<sub>puncak</sub>/d<i>m</i> di sekitar massa nol adalah sebagai berikut.</p>
+  <div class="eq"><span><i>σ</i><sub>MIR</sub> ≈ (1 + MIR/100) √2 <i>σ</i><sub>Z</sub> <span class="gap"></span><i>m</i><sub>LOD</sub> = 3 <i>σ</i><sub>MIR</sub> / |<i>S</i>|</span><span class="en">(23)</span></div>
+
+  <h3>7. Asumsi dan batas keabsahan</h3>
+  <ul>
+    <li>Strip dianggap planar dan tak hingga pada arah lebar, sehingga efek tepi, kelengkungan, dan arus pada arah lebar diabaikan.</li>
+    <li>Magnetisasi dianggap seragam dan berotasi koheren. Gerak dinding domain dan resonansi ketebalan akibat pertukaran tidak dimasukkan, jadi model paling sahih pada frekuensi di atas beberapa MHz dan pada film tipis berdomain sederhana.</li>
+    <li>Arus perpindahan diabaikan dan sensor dianggap terbias oleh medan statis sejajar sumbu panjang strip.</li>
+    <li>Lapisan partikel dianggap medium efektif dan partikel isolator. Rugi arus eddy pada serbuk logam hanya masuk melalui susceptibilitas kompleks, jadi hasil untuk Ni, Co, Fe, dan permalloy perlu diperlakukan sebagai perkiraan.</li>
+    <li>Kopling dinamis lapisan partikel dihitung dengan pendekatan fluks pada satu muka strip. Ini adalah perkiraan orde pertama dan bukan solusi medan penuh tiga dimensi.</li>
+    <li>Nilai parameter bahan di panel adalah nilai tipikal dan sangat bergantung pada kualitas film, ukuran partikel, dan agregasi. Untuk prediksi kuantitatif, ukur parameter sensor dan partikel Anda sendiri.</li>
+  </ul>
+
+  <h3>8. Pustaka untuk ditelusuri lebih lanjut</h3>
+  <ul>
+    <li>L. D. Landau dan E. M. Lifshitz, Phys. Z. Sowjetunion 8, 153 (1935), dan T. L. Gilbert, IEEE Trans. Magn. 40, 3443 (2004), untuk persamaan LLG.</li>
+    <li>C. Kittel, Phys. Rev. 73, 155 (1948), dan J. Smit dan H. G. Beljers, Philips Res. Rep. 10, 113 (1955), untuk resonansi dan medan kekakuan.</li>
+    <li>R. S. Beach dan A. E. Berkowitz, Appl. Phys. Lett. 64, 3652 (1994), dan L. V. Panina dan K. Mohri, Appl. Phys. Lett. 65, 1189 (1994), untuk teori magnetoimpedansi klasik.</li>
+    <li>L. Kraus, J. Magn. Magn. Mater. 195, 764 (1999), untuk MI pada konduktor planar beranisotropi uniaksial.</li>
+    <li>M. Knobel, M. Vázquez, dan L. Kraus, Handbook of Magnetic Materials 15, 497 (2003), sebagai tinjauan.</li>
+    <li>E. C. Stoner dan E. P. Wohlfarth, Phil. Trans. R. Soc. A 240, 599 (1948), dan L. Néel, Ann. Géophys. 5, 99 (1949), untuk partikel terblokir dan superparamagnetik.</li>
+    <li>J. C. Maxwell Garnett, Phil. Trans. R. Soc. A 203, 385 (1904), dan J. A. Osborn, Phys. Rev. 67, 351 (1945), untuk medium efektif dan faktor demagnetisasi.</li>
+  </ul>
+  <p class="note">Rujukan ditulis dari ingatan, jadi periksa volume dan halaman pada sumber aslinya sebelum dikutip.</p>
+</div>
+
+</div>
+
+<script>
+/* ===== Konstanta fisika ===== */
+const MU0=4e-7*Math.PI, KB=1.380649e-23, GAM=1.76085963e11; /* GAM dalam rad per detik per tesla */
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function makeRandn(seed){const r=mulberry32(seed|0);return ()=>{let u=0;while(u===0)u=r();const v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};}
+
+/* ===== Bilangan kompleks sebagai [re, im], konvensi waktu exp(j w t) ===== */
+const cadd=(a,b)=>[a[0]+b[0],a[1]+b[1]];
+const cmul=(a,b)=>[a[0]*b[0]-a[1]*b[1],a[0]*b[1]+a[1]*b[0]];
+const cdiv=(a,b)=>{const d=b[0]*b[0]+b[1]*b[1];return [(a[0]*b[0]+a[1]*b[1])/d,(a[1]*b[0]-a[0]*b[1])/d];};
+const csqrt=a=>{const r=Math.hypot(a[0],a[1]);const re=Math.sqrt((r+a[0])/2);let im=Math.sqrt(Math.max((r-a[0])/2,0));if(a[1]<0)im=-im;return [re,im];};
+const ccosh=z=>{const a=clamp(z[0],-350,350),b=z[1];return [Math.cosh(a)*Math.cos(b),Math.sinh(a)*Math.sin(b)];};
+const csinh=z=>{const a=clamp(z[0],-350,350),b=z[1];return [Math.sinh(a)*Math.cos(b),Math.cosh(a)*Math.sin(b)];};
+
+/* kuadratur Gauss Hermite 7 titik untuk rata rata atas sebaran medan sebar */
+const GH_X=[-3.750440,-2.366759,-1.154405,0,1.154405,2.366759,3.750440];
+const GH_W=[0.000548269,0.0307571,0.240123,0.457143,0.240123,0.0307571,0.000548269];
+
+function langevin(x){ if(Math.abs(x)<1e-3) return x/3-x*x*x/45; return 1/Math.tanh(x)-1/x; }
+
+/* ===== 1. Permeabilitas lapisan magnetik dari persamaan LLG dan Smit Beljers ===== */
+/* Hm dalam mT, f dalam Hz. S.axis bernilai long atau trans. Mengembalikan susceptibilitas kompleks chi dengan mu = 1 + chi. */
+function chiLayer(Hm,dir,f,S,sOv){
+  const w=2*Math.PI*f, wg=w/GAM, Ms=S.Ms, Hk=S.Hk*1e-3;
+  let A,B,c2=1;
+  if(S.axis==='long'){
+    /* sumbu mudah sejajar medan. Hp adalah komponen medan sepanjang magnetisasi, s adalah arah magnetisasi terhadap sumbu x */
+    const h=Hm*1e-3;
+    const s=(sOv!==undefined)?sOv:(h>=0?1:-1);
+    const Hp=Math.max(s*h,-0.95*Hk);
+    A=Hk+Hp; B=Hk+Hp+Ms;
+  }else{
+    const H=Math.abs(Hm)*1e-3;
+    if(H>=Hk){A=H-Hk;B=H+Ms;}
+    else{A=(Hk*Hk-H*H)/Hk;B=Hk+Ms;c2=(H/Hk)*(H/Hk);}
+  }
+  const G=Math.max(S.alpha*wg+S.dH0*1e-3/2,1e-9);
+  /* chi = Ms (B + jG) / ((A + jG)(B + jG) - (w/gamma)^2) */
+  const den=[A*B-G*G-wg*wg,G*(A+B)];
+  const c=cdiv([Ms*B,Ms*G],den);
+  return [c2*c[0],c2*c[1]];
+}
+
+/* ===== 2. Impedansi trilayer F/Cu/F dari persamaan Maxwell, solusi eksak untuk lapisan tak hingga ===== */
+function zOne(Hm,dir,S,f,sOv){
+  const w=2*Math.PI*f;
+  const chi=chiLayer(Hm,dir,f,S,sOv), mu=[1+chi[0],chi[1]];
+  const sc=S.sigC*1e6, sf=S.sigF*1e6;
+  const kc=csqrt([0,w*MU0*sc]), kf=csqrt(cmul([0,w*MU0*sf],mu));
+  const dc=S.tcu*1e-6/2, tm=S.tf*1e-6;
+  const kcd=[kc[0]*dc,kc[1]*dc], kft=[kf[0]*tm,kf[1]*tm];
+  const A=ccosh(kcd);
+  const B=cdiv(cmul(mu,cmul(kc,csinh(kcd))),kf);
+  const Es=cadd(cmul(A,ccosh(kft)),cmul(B,csinh(kft)));
+  const Hs0=cadd(cmul(A,csinh(kft)),cmul(B,ccosh(kft)));
+  const jwm=[-w*MU0*mu[1],w*MU0*mu[0]];
+  const Hs=cmul(cdiv(kf,jwm),Hs0);
+  const Zs=cdiv(Es,Hs);
+  const g=(S.len*1e-3)/(2*S.wid*1e-3);
+  return [Zs[0]*g,Zs[1]*g];
+}
+const erf=x=>{const t=1/(1+0.3275911*Math.abs(x));const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x);return x>=0?y:-y;};
+const Phi=x=>0.5*(1+erf(x/Math.SQRT2));
+/* untuk sumbu mudah longitudinal, pembalikan magnetisasi terjadi pada sebaran medan koersif sehingga impedansi merupakan rata rata dua keadaan */
+function zSensor(Hm,dir,S,f){
+  if(S.axis==='long'&&S.Hc>0){
+    const Hc=Math.min(S.Hc,0.95*S.Hk), sg=Math.max(0.3*Hc,0.03);
+    const p=dir==='up'?Phi((Hm-Hc)/sg):Phi((Hm+Hc)/sg);
+    if(p>0.9995) return zOne(Hm,dir,S,f,1);
+    if(p<0.0005) return zOne(Hm,dir,S,f,-1);
+    const a=zOne(Hm,dir,S,f,1), b=zOne(Hm,dir,S,f,-1);
+    return [p*a[0]+(1-p)*b[0],p*a[1]+(1-p)*b[1]];
+  }
+  return zOne(Hm,dir,S,f,undefined);
+}
+/* resistansi DC untuk pemeriksaan */
+const rdc=S=>(S.len*1e-3)/(S.wid*1e-3*(S.sigC*1e6*S.tcu*1e-6+2*S.sigF*1e6*S.tf*1e-6));
+
+/* ===== 3. Nanopartikel ===== */
+/* Faktor demagnetisasi dalam bidang untuk spheroid pipih. tp dan Ac dalam cm dan cm2 */
+function Nin(tp,Ac){
+  const a=Math.sqrt(Ac/Math.PI), e=(tp/2)/a;
+  if(e>=1) return 1/3; if(e<=0) return 0;
+  const Nz=(1/(1-e*e))*(1-e*Math.acos(e)/Math.sqrt(1-e*e));
+  return (1-Nz)/2;
+}
+/* Respons satu partikel. Bapp dalam tesla, f dalam Hz. Mengembalikan
+   Mp (mu0 kali magnetisasi partikel dalam tesla), s (faktor amplitudo momen untuk sebaran dipolar), chi (susceptibilitas transversal kompleks) */
+function particleResp(Bapp,dir,mat,f,T){
+  const w=2*Math.PI*f, t=mat.type, Ms=mat.Msp*1e3;
+  if(t==='none') return {Mp:0,s:0,chi:[0,0]};
+  if(t==='dia'||t==='para') return {Mp:mat.chiV*Bapp,s:0,chi:[mat.chiV,0]};
+  const V=Math.PI*Math.pow(mat.d*1e-9,3)/6, K=mat.K*1e3;
+  if(t==='sp'){
+    const m=Ms*V, xi=m*Math.abs(Bapp)/(KB*T), L=langevin(xi)*Math.sign(Bapp||1);
+    const chi0=xi<1e-6?MU0*Ms*m/(3*KB*T):MU0*Ms*Math.abs(L)/Math.abs(Bapp);
+    const tau=mat.tau0*1e-9*Math.exp(Math.min(K*V/(KB*T),60));
+    const wt=w*tau, den=1+wt*wt;
+    return {Mp:MU0*Ms*L,s:Math.abs(L),chi:[chi0/den,-chi0*wt/den]};
+  }
+  /* feromagnetik terblokir dengan orientasi acak, model Stoner Wohlfarth hampir seragam */
+  const chi_i=MU0*Ms*Ms/(3*K), BK=2*K/Ms, Bc=0.479*BK;
+  const sh=Bapp-(dir==='up'?1:-1)*Bc;
+  const arg=chi_i*sh/(MU0*Ms), mbar=Math.tanh(arg);
+  const chiH=chi_i/Math.pow(Math.cosh(arg),2);
+  const wr=GAM*(BK+Math.abs(Bapp)), x=w/wr;
+  const c=cdiv([chiH,0],[1-x*x,2*mat.alphaP*x]);
+  return {Mp:MU0*Ms*mbar,s:Math.sqrt(mbar*mbar+(1-mbar*mbar)/3),chi:c};
+}
+/* Geometri lapisan sampel dari massa */
+function layerGeom(P,mat,mass){
+  if(mass<=0||mat.type==='none') return {tp:0,teff:0,N:0};
+  const tp=mass/(mat.rho*P.pf*P.Ac);          /* cm */
+  const lam=(P.wid*1e-3/Math.PI)*100;         /* kedalaman interaksi dalam cm */
+  const teff=lam*(1-Math.exp(-tp/lam));
+  return {tp,teff,N:Nin(tp,P.Ac),lam};
+}
+
+/* ===== 4. Impedansi total ===== */
+function totalZ(Hm,dir,P,mat,mass){
+  const f=P.f*1e6, w=2*Math.PI*f;
+  let Bs=0, sig=0, dZ=[0,0];
+  if(mass>0&&mat.type!=='none'){
+    const g=layerGeom(P,mat,mass);
+    const pr=particleResp(Hm*1e-3,dir,mat,f,P.T);
+    Bs=-g.N*P.pf*pr.Mp;                      /* medan sebar rata rata dalam tesla */
+    sig=P.Cd*P.pf*MU0*(mat.Msp||0)*1e3*pr.s;      /* sebaran medan sebar dalam tesla */
+    /* Maxwell Garnett untuk permeabilitas efektif lapisan */
+    const mup=[1+pr.chi[0],pr.chi[1]];
+    const q=cdiv([mup[0]-1,mup[1]],[mup[0]+2,mup[1]]);
+    const fq=[P.pf*q[0],P.pf*q[1]];
+    const muL=cdiv([1+2*fq[0],2*fq[1]],[1-fq[0],-fq[1]]);
+    const k=w*MU0*g.teff*1e-2*(P.len*1e-3)/(2*P.wid*1e-3);
+    dZ=[-k*muL[1],k*(muL[0]-1)];             /* j w mu0 (muL-1) teff l / (2 w), dengan muL = mu' + j*im */
+  }
+  const Hc=Hm+Bs*1e3;
+  let re=0,im=0;
+  if(sig*1e3<0.01){const z=zSensor(Hc,dir,P,f);re=z[0];im=z[1];}
+  else for(let i=0;i<7;i++){const z=zSensor(Hc+sig*1e3*GH_X[i],dir,P,f);re+=GH_W[i]*z[0];im+=GH_W[i]*z[1];}
+  re+=dZ[0]+P.Rc; im+=dZ[1]+w*P.Lp*1e-9;
+  return {re,im,abs:Math.hypot(re,im)};
+}
+const refZ=(P,mat,mass)=>totalZ(P.Hmax,'up',P,mat,mass).abs;
+
+/* ===== 5. Sapuan, pengukuran dan analisis ===== */
+function setpoints(P){
+  const pos=new Set([0]);
+  for(let h=P.d1;h<=P.Hfine+1e-9;h+=P.d1) pos.add(+h.toFixed(4));
+  const start=Math.ceil((P.Hfine+1e-9)/P.d1)*P.d1;
+  for(let h=Math.max(start,P.Hfine)+P.d2;h<P.Hmax-1e-9;h+=P.d2) pos.add(+h.toFixed(4));
+  pos.add(P.Hmax);
+  const p=[...pos].sort((a,b)=>a-b);
+  const neg=p.filter(v=>v>0).map(v=>-v);
+  return [...neg,...p].sort((a,b)=>a-b);
+}
+function measure(P,rows,mat,seed){
+  const sp=setpoints(P);
+  return rows.map((r,ri)=>{
+    const randn=makeRandn(seed+ri*7919);
+    const zref=refZ(P,mat,r.mass)*(1+P.sigZ/100*randn());
+    const pts=[];
+    ['up','down'].forEach(dir=>{
+      const arr=dir==='up'?sp:sp.slice().reverse();
+      arr.forEach(h=>{
+        const Ht=h+P.sigH*randn();
+        const z=totalZ(Ht,dir,P,mat,r.mass);
+        const zm=z.abs*(1+P.sigZ/100*randn());
+        pts.push({H:Ht,Hset:h,dir,I:h/P.kcoil,z:zm,mir:100*(zm-zref)/zref});
+      });
+    });
+    return Object.assign({},r,{pts});
+  });
+}
+function modelCurve(P,mat,mass,dir,step){
+  const zref=refZ(P,mat,mass), out=[];
+  for(let h=-P.Hmax;h<=P.Hmax+1e-9;h+=step){
+    const z=totalZ(h,dir,P,mat,mass);
+    out.push({x:h,y:100*(z.abs-zref)/zref,re:z.re,im:z.im,abs:z.abs});
+  }
+  return out;
+}
+function peakInfo(c){
+  let ip=0; for(let i=1;i<c.length;i++) if(c[i].y>c[ip].y) ip=i;
+  const peak=c[ip].y, half=peak/2;
+  let l=c[0].x, r=c[c.length-1].x;
+  for(let i=ip;i>0;i--){ if(c[i-1].y<=half){ const t=(half-c[i-1].y)/(c[i].y-c[i-1].y); l=c[i-1].x+t*(c[i].x-c[i-1].x); break; } }
+  for(let i=ip;i<c.length-1;i++){ if(c[i+1].y<=half){ const t=(half-c[i+1].y)/(c[i].y-c[i+1].y); r=c[i+1].x+t*(c[i].x-c[i+1].x); break; } }
+  return {peak,pos:c[ip].x,fwhm:r-l};
+}
+/* puncak MIR sapuan naik untuk satu massa, dengan pemindaian kasar lalu halus */
+function peakAt(P,mat,mass){
+  const zref=refZ(P,mat,mass), lim=Math.min(P.Hmax,Math.max(10,3*P.Hk+5));
+  const ev=h=>100*(totalZ(h,'up',P,mat,mass).abs-zref)/zref;
+  let bh=0,bv=-1e18;
+  for(let h=-lim;h<=lim+1e-9;h+=0.5){const v=ev(h);if(v>bv){bv=v;bh=h;}}
+  for(let h=bh-0.5;h<=bh+0.5+1e-9;h+=0.02){const v=ev(h);if(v>bv){bv=v;}}
+  return bv;
+}
+
+const COLORS=['#1c2bf0','#2fd62f','#ff9a1a','#c13ae0','#00a3b8','#d92d20'];
+const SERIF='"Times New Roman", Times, Georgia, serif';
+
+/* ---------- Pembantu ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+const fmtNum=v=>{const a=Math.abs(v);const d=a>=100?0:a>=10?1:a>=1?2:3;return (+v.toFixed(d)).toString();};
+const f=(v,d)=>isFinite(v)?v.toFixed(d):'NaN';
+function niceStep(range,n){const raw=range/n;const p=Math.pow(10,Math.floor(Math.log10(raw)));const m=raw/p;return (m<1.5?1:m<3?2:m<7?5:10)*p;}
+function ticksFor(a,b,step){const t=[];for(let v=Math.ceil(a/step-1e-9)*step;v<=b+1e-9;v+=step)t.push(+v.toFixed(10));return t;}
+const NS='http://www.w3.org/2000/svg';
+function el(name,attrs,parent,text){const e=document.createElementNS(NS,name);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!==undefined)e.textContent=text;if(parent)parent.appendChild(e);return e;}
+
+/* ---------- Mesin grafik SVG ---------- */
+let chartUid=0;
+function drawChart(host,spec){
+  const W=Math.max(host.clientWidth,260), H=host.clientHeight||340;
+  host.innerHTML='';
+  const svg=el('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`,'font-family':SERIF},host);
+  const m={l:spec.ml||70,r:spec.mr||18,t:spec.mt||16,b:spec.mb||56};
+  const pw=W-m.l-m.r, ph=H-m.t-m.b;
+  const fx=spec.xlog?(v=>Math.log10(v)):(v=>v);
+  const x0=fx(spec.xmin), x1=fx(spec.xmax);
+  const sx=v=>m.l+(fx(v)-x0)/(x1-x0)*pw;
+  const sy=v=>m.t+ph-(v-spec.ymin)/(spec.ymax-spec.ymin)*ph;
+  el('rect',{x:0,y:0,width:W,height:H,fill:'#ffffff'},svg);
+  const cid='clip'+(++chartUid);
+  const cp=el('clipPath',{id:cid},svg); el('rect',{x:m.l,y:m.t,width:pw,height:ph},cp);
+  const xf=spec.xfmt||(v=>String(v)), yf=spec.yfmt||(v=>String(v));
+  if(spec.grid){
+    spec.xticks.forEach(t=>el('line',{x1:sx(t),x2:sx(t),y1:m.t,y2:m.t+ph,stroke:'#e9edf2','stroke-width':1},svg));
+    spec.yticks.forEach(t=>el('line',{x1:m.l,x2:m.l+pw,y1:sy(t),y2:sy(t),stroke:'#e9edf2','stroke-width':1},svg));
+  }
+  /* ticks di dalam bingkai */
+  spec.xticks.forEach(t=>{
+    const x=sx(t);
+    el('line',{x1:x,x2:x,y1:m.t+ph,y2:m.t+ph-6,stroke:'#000','stroke-width':1.2},svg);
+    el('line',{x1:x,x2:x,y1:m.t,y2:m.t+6,stroke:'#000','stroke-width':1.2},svg);
+    el('text',{x:x,y:m.t+ph+20,'text-anchor':'middle','font-size':15,fill:'#000'},svg,xf(t));
+  });
+  spec.yticks.forEach(t=>{
+    const y=sy(t);
+    el('line',{x1:m.l,x2:m.l+6,y1:y,y2:y,stroke:'#000','stroke-width':1.2},svg);
+    el('line',{x1:m.l+pw,x2:m.l+pw-6,y1:y,y2:y,stroke:'#000','stroke-width':1.2},svg);
+    el('text',{x:m.l-9,y:y+5,'text-anchor':'end','font-size':15,fill:'#000'},svg,yf(t));
+  });
+  const g=el('g',{'clip-path':`url(#${cid})`},svg);
+  const hits=[];
+  (spec.series||[]).forEach(s=>{
+    const pts=s.pts.filter(p=>isFinite(p.x)&&isFinite(p.y));
+    if(s.line&&pts.length>1){
+      const d=pts.map((p,i)=>(i?'L':'M')+sx(p.x).toFixed(1)+' '+sy(p.y).toFixed(1)).join(' ');
+      const a={d,fill:'none',stroke:s.color,'stroke-width':s.width||1.6,'stroke-linejoin':'round'};
+      if(s.dash) a['stroke-dasharray']=s.dash;
+      if(s.opacity) a['stroke-opacity']=s.opacity;
+      el('path',a,g);
+    }
+    if(s.marker){
+      const r=s.size||4.5; let d='';
+      pts.forEach(p=>{const x=sx(p.x),y=sy(p.y);
+        if(s.marker==='diamond') d+=`M${(x).toFixed(1)} ${(y-r).toFixed(1)}L${(x+r).toFixed(1)} ${y.toFixed(1)}L${x.toFixed(1)} ${(y+r).toFixed(1)}L${(x-r).toFixed(1)} ${y.toFixed(1)}Z`;
+        else d+=`M${(x-r).toFixed(1)} ${y.toFixed(1)}a${r} ${r} 0 1 0 ${2*r} 0a${r} ${r} 0 1 0 ${-2*r} 0Z`;});
+      el('path',{d,fill:s.fill||'#fff','fill-opacity':s.fill?1:0.0,stroke:s.color,'stroke-width':1.7},g);
+    }
+    if(s.tip) pts.forEach(p=>hits.push({px:sx(p.x),py:sy(p.y),text:s.tip(p)}));
+  });
+  if(spec.extra) spec.extra(g,{sx,sy,m,pw,ph,svg});
+  if(spec.highlight){const h=spec.highlight;el('circle',{cx:sx(h.x),cy:sy(h.y),r:9,fill:'rgba(226,52,52,.15)',stroke:'#e23434','stroke-width':2.4},g);}
+  el('rect',{x:m.l,y:m.t,width:pw,height:ph,fill:'none',stroke:'#000','stroke-width':1.4},svg);
+  el('text',{x:m.l+pw/2,y:H-10,'text-anchor':'middle','font-size':17,fill:'#000'},svg,spec.xlabel||'');
+  el('text',{transform:`translate(18 ${m.t+ph/2}) rotate(-90)`,'text-anchor':'middle','font-size':17,fill:'#000'},svg,spec.ylabel||'');
+  /* legenda */
+  if(spec.legend&&spec.legend.length){
+    const rowH=19, lw=Math.max(...spec.legend.map(l=>l.label.length))*7.6+56;
+    const lx=m.l+pw-lw-8, ly=m.t+8;
+    el('rect',{x:lx,y:ly,width:lw,height:spec.legend.length*rowH+8,fill:'#fff','fill-opacity':.88,stroke:'#cfd4dc','stroke-width':.8},svg);
+    spec.legend.forEach((l,i)=>{
+      const y=ly+8+i*rowH+rowH/2-2;
+      if(l.line) el('line',{x1:lx+8,x2:lx+40,y1:y,y2:y,stroke:l.color,'stroke-width':1.8,'stroke-dasharray':l.dash||''},svg);
+      if(l.marker==='diamond') el('path',{d:`M${lx+24} ${y-5}L${lx+29} ${y}L${lx+24} ${y+5}L${lx+19} ${y}Z`,fill:'#fff',stroke:l.color,'stroke-width':1.6},svg);
+      el('text',{x:lx+48,y:y+4.5,'font-size':13.5,fill:'#000'},svg,l.label);
+    });
+  }
+  /* tooltip */
+  if(hits.length){
+    host.style.position='relative';
+    const tip=document.createElement('div'); tip.className='tip'; tip.style.display='none'; host.appendChild(tip);
+    svg.addEventListener('mousemove',e=>{
+      const r=svg.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+      let best=null,bd=22*22;
+      for(const h of hits){const d=(h.px-mx)*(h.px-mx)+(h.py-my)*(h.py-my);if(d<bd){bd=d;best=h;}}
+      if(best){tip.style.display='block';tip.style.left=best.px+'px';tip.style.top=best.py+'px';tip.textContent=best.text;}
+      else tip.style.display='none';
+    });
+    svg.addEventListener('mouseleave',()=>{tip.style.display='none';});
+  }
+  return svg;
+}
+
+
+/* ---------- Data bahan nanopartikel (nilai tipikal literatur, dapat diubah) ---------- */
+const MATS={
+  none:{name:'Tanpa partikel',type:'none',Msp:0,d:10,K:0,tau0:1,alphaP:0.05,chiV:0,rho:5},
+  fe3o4:{name:'Fe3O4 superparamagnetik 10 nm',type:'sp',Msp:400,d:10,K:11,tau0:1,alphaP:0.05,chiV:0,rho:5.18},
+  fe2o3:{name:'gamma Fe2O3 superparamagnetik 10 nm',type:'sp',Msp:350,d:10,K:4.7,tau0:1,alphaP:0.05,chiV:0,rho:4.9},
+  cofe2o4:{name:'CoFe2O4 terblokir 20 nm',type:'fm',Msp:350,d:20,K:200,tau0:1,alphaP:0.05,chiV:0,rho:5.3},
+  ni:{name:'Ni terblokir 30 nm',type:'fm',Msp:485,d:30,K:50,tau0:1,alphaP:0.05,chiV:0,rho:8.9},
+  co:{name:'Co terblokir 30 nm',type:'fm',Msp:1400,d:30,K:450,tau0:1,alphaP:0.05,chiV:0,rho:8.9},
+  fe:{name:'Fe terblokir 30 nm',type:'fm',Msp:1700,d:30,K:48,tau0:1,alphaP:0.05,chiV:0,rho:7.87},
+  permalloy:{name:'Permalloy NiFe serbuk lunak',type:'fm',Msp:800,d:30,K:1,tau0:1,alphaP:0.02,chiV:0,rho:8.7},
+  ndfeb:{name:'NdFeB serbuk magnet keras',type:'fm',Msp:1280,d:1000,K:4300,tau0:1,alphaP:0.05,chiV:0,rho:7.5},
+  gd2o3:{name:'Gd2O3 paramagnetik',type:'para',Msp:0,d:10,K:0,tau0:1,alphaP:0.05,chiV:0.0136,rho:7.4},
+  au:{name:'Au diamagnetik',type:'dia',Msp:0,d:10,K:0,tau0:1,alphaP:0.05,chiV:-3.4e-5,rho:19.3},
+  zno:{name:'ZnO diamagnetik lemah',type:'dia',Msp:0,d:10,K:0,tau0:1,alphaP:0.05,chiV:-2.3e-5,rho:5.6}
+};
+const PRESET_GROUPS=[
+  ['Tanpa bahan',['none']],
+  ['Oksida besi',['fe3o4','fe2o3','cofe2o4']],
+  ['Logam feromagnetik',['ni','co','fe','permalloy','ndfeb']],
+  ['Paramagnetik dan diamagnetik',['gd2o3','au','zno']]
+];
+/* bahan lapisan magnetik sensor, nilai tipikal film tipis */
+const SENS={
+  nife:{name:'NiFe permalloy',Ms:1.0,alpha:0.008,dH0:0.3,sigF:3.3},
+  cofeb:{name:'CoFeB amorf',Ms:1.5,alpha:0.006,dH0:0.5,sigF:0.6},
+  cofesib:{name:'CoFeSiB amorf',Ms:0.7,alpha:0.01,dH0:0.5,sigF:0.8},
+  finemet:{name:'FeCuNbSiB nanokristalin',Ms:1.2,alpha:0.01,dH0:0.3,sigF:0.85}
+};
+
+/* ---------- Kontrol geser ---------- */
+const CFG={
+  g_sensor:[
+    {id:'Hk',label:'Medan anisotropi Hk',min:0.1,max:40,step:0.1,val:3,unit:'mT'},
+    {id:'Hc',label:'Medan koersif sensor Hc',min:0,max:2,step:0.05,val:0.2,unit:'mT'},
+    {id:'tf',label:'Tebal tiap lapisan magnetik',min:0.2,max:6,step:0.1,val:1,unit:'μm'},
+    {id:'tcu',label:'Tebal total inti Cu',min:0.2,max:10,step:0.2,val:2,unit:'μm'},
+    {id:'len',label:'Panjang strip',min:1,max:20,step:0.5,val:5,unit:'mm'},
+    {id:'wid',label:'Lebar strip',min:0.1,max:3,step:0.1,val:0.5,unit:'mm'},
+    {id:'freq',label:'Frekuensi arus ukur',min:0,max:3,step:0.01,val:1,unit:'MHz',log:true},
+    {id:'Rc',label:'Resistansi kontak seri',min:0,max:5,step:0.05,val:0,unit:'ohm'},
+    {id:'Lp',label:'Induktansi parasit seri',min:0,max:200,step:1,val:0,unit:'nH'}
+  ],
+  g_meas:[
+    {id:'N',label:'Jumlah lilitan per kumparan',min:100,max:3000,step:50,val:1000,unit:'lilitan'},
+    {id:'Rcoil',label:'Jari jari kumparan',min:3,max:15,step:0.5,val:6,unit:'cm'},
+    {id:'Hmax',label:'Medan maksimum sapuan',min:20,max:120,step:5,val:70,unit:'mT'},
+    {id:'Hfine',label:'Daerah langkah halus',min:4,max:30,step:1,val:10,unit:'mT'},
+    {id:'d1',label:'Langkah medan halus',min:0.2,max:4,step:0.1,val:1,unit:'mT'},
+    {id:'d2',label:'Langkah medan kasar',min:1,max:10,step:0.5,val:3,unit:'mT'},
+    {id:'sigH',label:'Jitter medan terukur',min:0,max:1,step:0.01,val:0.1,unit:'mT'},
+    {id:'sigZ',label:'Derau relatif impedansi',min:0,max:0.2,step:0.005,val:0.02,unit:'%'},
+    {id:'zoom',label:'Rentang grafik perbesaran',min:2,max:30,step:1,val:8,unit:'mT'}
+  ]
+};
+const outs={};
+function mkSlider(host,c){
+  const w=document.createElement('div'); w.className='ctl';
+  w.innerHTML=`<label for="${c.id}"><span>${c.label}</span><output></output></label><input type="range" id="${c.id}" form="ctlForm" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.val}">`;
+  host.appendChild(w);
+  const inp=w.querySelector('input'), out=w.querySelector('output');
+  const show=()=>{const v=+inp.value; out.textContent=(c.log?fmtNum(Math.pow(10,v)):fmtNum(v))+(c.unit?' '+c.unit:'');};
+  outs[c.id]=show; inp.addEventListener('input',()=>{show();schedule();}); show();
+}
+for(const g in CFG){ const host=$('#'+g); CFG[g].forEach(c=>mkSlider(host,c)); }
+const refreshOutputs=()=>Object.values(outs).forEach(fn=>fn());
+
+/* ---------- Baris sampel ---------- */
+let rowsState=[]; let rowUid=0;
+const autoLabel=m=>m>0?`${+m.toFixed(3)} gram`:'Tanpa nano';
+function setRows(list){ rowsState=list.map(m=>({id:++rowUid,mass:m,label:autoLabel(m),auto:true})); renderRows(); }
+function renderRows(){
+  const host=$('#rows'); host.innerHTML='';
+  rowsState.forEach((r,i)=>{
+    const d=document.createElement('div'); d.className='srow';
+    d.innerHTML=`<span class="dot" style="background:${COLORS[i%COLORS.length]}"></span><input type="text" class="lab" aria-label="Nama sampel" value=""><input type="number" class="mass" aria-label="Massa" step="0.05" min="0" value=""><span class="u">g</span><button type="button" class="x" title="Hapus sampel" aria-label="Hapus sampel">×</button>`;
+    const lab=d.querySelector('.lab'), mass=d.querySelector('.mass');
+    lab.value=r.label; mass.value=r.mass;
+    lab.addEventListener('input',()=>{r.label=lab.value;r.auto=false;schedule();});
+    mass.addEventListener('input',()=>{r.mass=Math.max(0,+mass.value||0);if(r.auto){r.label=autoLabel(r.mass);lab.value=r.label;}schedule();});
+    d.querySelector('.x').addEventListener('click',()=>{if(rowsState.length>1){rowsState.splice(i,1);renderRows();schedule();}});
+    host.appendChild(d);
+  });
+  $('#addRow').disabled=rowsState.length>=6;
+}
+$('#addRow').addEventListener('click',()=>{
+  if(rowsState.length>=6) return;
+  const last=rowsState.length?Math.max(...rowsState.map(r=>r.mass)):0;
+  const m=+(last+0.1).toFixed(3);
+  rowsState.push({id:++rowUid,mass:m,label:autoLabel(m),auto:true}); renderRows(); schedule();
+});
+$('#figRows').addEventListener('click',()=>{setRows([0,0.1,0.3]);schedule();});
+
+/* ---------- Bahan sensor dan bahan partikel ---------- */
+const sensSel=$('#sensPreset');
+for(const k in SENS){const o=document.createElement('option');o.value=k;o.textContent=SENS[k].name;sensSel.appendChild(o);}
+const so=document.createElement('option'); so.value='custom'; so.textContent='Kustom'; sensSel.appendChild(so);
+let applyingS=false;
+function applySens(){
+  const k=sensSel.value; if(k==='custom') return; const m=SENS[k]; applyingS=true;
+  $('#sMs').value=m.Ms; $('#salpha').value=m.alpha; $('#sdH0').value=m.dH0; $('#ssigF').value=m.sigF; $('#ssigC').value=50;
+  applyingS=false;
+}
+sensSel.addEventListener('change',()=>{applySens();schedule();});
+['sMs','salpha','sdH0','ssigF','ssigC'].forEach(id=>$('#'+id).addEventListener('input',()=>{if(!applyingS)sensSel.value='custom';schedule();}));
+['axis','showDown','showModel'].forEach(id=>$('#'+id).addEventListener('input',schedule));
+
+const presetSel=$('#preset');
+PRESET_GROUPS.forEach(([g,keys])=>{
+  const og=document.createElement('optgroup'); og.label=g;
+  keys.forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=MATS[k].name;og.appendChild(o);});
+  presetSel.appendChild(og);
+});
+const oc=document.createElement('option'); oc.value='custom'; oc.textContent='Kustom'; presetSel.appendChild(oc);
+let applyingPreset=false;
+function applyPreset(){
+  const k=presetSel.value; if(k==='custom') return;
+  const m=MATS[k]; applyingPreset=true;
+  $('#mtype').value=m.type; $('#mMsp').value=m.Msp; $('#md').value=m.d; $('#mK').value=m.K; $('#mtau0').value=m.tau0;
+  $('#malphaP').value=m.alphaP; $('#mchiV').value=m.chiV; $('#mrho').value=m.rho;
+  applyingPreset=false;
+}
+presetSel.addEventListener('change',()=>{applyPreset();schedule();});
+['mtype','mMsp','md','mK','mtau0','malphaP','mchiV','mrho'].forEach(id=>$('#'+id).addEventListener('input',()=>{if(!applyingPreset)presetSel.value='custom';schedule();}));
+['mpf','mAc','mCd','mT'].forEach(id=>$('#'+id).addEventListener('input',schedule));
+
+function getP(){
+  const v=id=>+document.getElementById(id).value;
+  const P={Ms:v('sMs'),alpha:v('salpha'),dH0:v('sdH0'),sigF:v('ssigF'),sigC:v('ssigC'),axis:$('#axis').value,
+    Hk:v('Hk'),Hc:v('Hc'),tf:v('tf'),tcu:v('tcu'),len:v('len'),wid:v('wid'),f:Math.pow(10,v('freq')),Rc:v('Rc'),Lp:v('Lp'),
+    Hmax:v('Hmax'),Hfine:Math.min(v('Hfine'),v('Hmax')),d1:v('d1'),d2:v('d2'),sigH:v('sigH'),sigZ:v('sigZ'),
+    pf:clamp(v('mpf')||0.2,0.01,0.64),Ac:Math.max(v('mAc')||20,0.01),Cd:Math.max(v('mCd'),0),T:Math.max(v('mT')||300,1)};
+  P.kcoil=0.7155*MU0*v('N')/(v('Rcoil')/100)*1000;
+  return P;
+}
+function getMat(){
+  const v=id=>+document.getElementById(id).value||0;
+  return {type:$('#mtype').value,Msp:v('mMsp'),d:Math.max(v('md'),0.5),K:Math.max(v('mK'),1e-6),tau0:Math.max(v('mtau0'),1e-6),alphaP:Math.max(v('malphaP'),1e-4),chiV:v('mchiV'),rho:Math.max(v('mrho'),0.1)};
+}
+
+/* ---------- Perhitungan utama ---------- */
+let seed=20261012, lastRun=null, pending=null;
+function schedule(){ clearTimeout(pending); pending=setTimeout(recompute,40); }
+const stat=(l,v,u)=>`<div class="stat"><span>${l}</span><b>${v}</b>${u?` <small>${u}</small>`:''}</div>`;
+const sgn=v=>(v>0?'+':'')+f(v,1);
+
+function recompute(){
+  const P=getP(), mat=getMat();
+  const rows=rowsState.map((r,i)=>({label:r.label||autoLabel(r.mass),mass:r.mass,color:COLORS[i%COLORS.length]}));
+  const meas=measure(P,rows,mat,seed);
+  const showDown=$('#showDown').checked, showModel=$('#showModel').checked;
+  const curves=rows.map(r=>modelCurve(P,mat,r.mass,'up',0.1));
+  const curvesDn=showModel&&showDown?rows.map(r=>modelCurve(P,mat,r.mass,'down',0.1)):null;
+  const infos=curves.map(peakInfo);
+  const base=rows.findIndex(r=>r.mass===0);
+  const peak0=base>=0?infos[base].peak:peakAt(P,MATS.none,0);
+  const sigPk=p=>(1+p/100)*P.sigZ*Math.SQRT2;
+
+  /* sensitivitas dan batas deteksi di sekitar massa nol */
+  const dm=0.02;
+  const S=(peakAt(P,mat,dm)-peakAt(P,mat,0))/dm;
+  const lod=Math.abs(S)>1e-9?3*sigPk(peak0)/Math.abs(S):Infinity;
+
+  /* sumbu */
+  let ymaxD=0,yminD=0;
+  meas.forEach(r=>r.pts.forEach(p=>{ymaxD=Math.max(ymaxD,p.mir);yminD=Math.min(yminD,p.mir);}));
+  const ytop=Math.max(ymaxD*1.28,0.5), ystep=niceStep(ytop,2.6), ymax=ytop;
+  const ymin=yminD<-0.05*ytop?Math.floor(yminD/ystep)*ystep:0;
+  const yticks=ticksFor(ymin,ymax,ystep);
+  const yfmt=v=>ystep<1?v.toFixed(ystep<0.1?2:1):String(Math.round(v));
+
+  const mkSeries=(xlimit)=>{
+    const out=[];
+    meas.forEach(r=>{
+      const up=r.pts.filter(p=>p.dir==='up').sort((a,b)=>a.H-b.H);
+      const dn=r.pts.filter(p=>p.dir==='down').sort((a,b)=>a.H-b.H);
+      const tip=p=>`${r.label}  H = ${f(p.H,2)} mT  MIR = ${f(p.mir,3)} %`;
+      out.push({pts:up.map(p=>({x:p.H,y:p.mir,H:p.H,mir:p.mir})),color:r.color,line:true,dash:'5 3',marker:'diamond',size:4.6,tip});
+      if(showDown) out.push({pts:dn.map(p=>({x:p.H,y:p.mir,H:p.H,mir:p.mir})),color:r.color,line:true,dash:'5 3',marker:'diamond',size:4.6,tip});
+    });
+    if(showModel){
+      curves.forEach((c,i)=>out.unshift({pts:c.filter(p=>Math.abs(p.x)<=xlimit),color:rows[i].color,line:true,width:1.1,opacity:.45}));
+      if(curvesDn) curvesDn.forEach((c,i)=>out.unshift({pts:c.filter(p=>Math.abs(p.x)<=xlimit),color:rows[i].color,line:true,width:1.1,opacity:.3,dash:'2 3'}));
+    }
+    return out;
+  };
+  const legend=rows.map(r=>({label:r.label,color:r.color,line:true,dash:'5 3',marker:'diamond'}));
+  const xstepF=niceStep(2*P.Hmax,7);
+  const zoomW=Math.min(+$('#zoom').value,P.Hmax);
+  const xstepZ=niceStep(2*zoomW,7);
+
+  /* pilihan sampel dan titik pengamatan */
+  const sel=$('#obsRow'), obs=$('#obs');
+  if(sel.options.length!==rows.length||[...sel.options].some((o,i)=>o.textContent!==rows[i].label)){
+    const keepIdx=lastRun===null?rows.length-1:Math.min(Math.max(+sel.value||0,0),rows.length-1);
+    sel.innerHTML=''; rows.forEach((r,i)=>{const o=document.createElement('option');o.value=i;o.textContent=r.label;sel.appendChild(o);}); sel.value=keepIdx;
+  }
+  const obsSel=Math.min(+sel.value||0,rows.length-1);
+  const npts=meas[obsSel].pts.length;
+  obs.max=npts-1;
+  if(lastRun===null){
+    const pts=meas[obsSel].pts; let bi=0,bd=1e9; pts.forEach((p,i)=>{if(p.dir==='up'&&Math.abs(p.Hset-1)<bd){bd=Math.abs(p.Hset-1);bi=i;}}); obs.value=bi;
+  } else if(+obs.value>npts-1) obs.value=npts-1;
+
+  const renderMain=()=>{
+    const oi=currentObs(meas,obsSel);
+    const hl=oi?{x:oi.pt.H,y:oi.pt.mir}:null;
+    drawChart($('#cFull'),{xmin:-P.Hmax,xmax:P.Hmax,ymin,ymax,xticks:ticksFor(-P.Hmax,P.Hmax,xstepF),yticks,xlabel:'H (mT)',ylabel:'Rasio Magnetoimpedansi (%)',yfmt,series:mkSeries(P.Hmax),legend,highlight:hl,
+      extra:(g,c)=>{
+        el('ellipse',{cx:c.sx(0),cy:c.sy(Math.max(ymaxD*0.8,0.1)),rx:Math.max(c.sx(zoomW)-c.sx(0),10)*1.3,ry:(c.sy(0)-c.sy(Math.max(ymaxD*1.2,0.2)))*0.5,fill:'none',stroke:'#4a6fa5','stroke-width':1,'stroke-dasharray':'2 3'},g);}});
+    drawChart($('#cZoom'),{xmin:-zoomW,xmax:zoomW,ymin,ymax,xticks:ticksFor(-zoomW,zoomW,xstepZ),yticks,xlabel:'H (mT)',ylabel:'Rasio Magnetoimpedansi (%)',yfmt,series:mkSeries(zoomW),legend,highlight:hl&&Math.abs(hl.x)<=zoomW?hl:null});
+  };
+
+  /* tabel ringkasan */
+  const head='<table><thead><tr><th>Sampel</th><th>Massa (g)</th><th>Puncak model (%)</th><th>Puncak terukur (%)</th><th>Posisi puncak (mT)</th><th>Lebar setengah tinggi (mT)</th><th>Perubahan puncak (%)</th><th>Tebal lapisan (μm)</th><th>Kedalaman efektif (μm)</th><th>Status</th></tr></thead><tbody>';
+  const body=rows.map((r,i)=>{
+    const inf=infos[i], g=layerGeom(P,mat,r.mass);
+    const pm=Math.max(...meas[i].pts.map(p=>p.mir));
+    const dpk=inf.peak-peak0, rel=peak0>0?dpk/peak0*100:0;
+    const n=Math.abs(dpk)/sigPk(peak0);
+    let st;
+    if(r.mass<=0) st='<span class="badge neu">Acuan</span>';
+    else if(n>=10) st='<span class="badge ok">'+(dpk<0?'Puncak turun jelas':'Puncak naik jelas')+'</span>';
+    else if(n>=3) st='<span class="badge mid">Perubahan lemah</span>';
+    else st='<span class="badge bad">Di bawah batas deteksi</span>';
+    return `<tr><td><span class="sw" style="background:${r.color}"></span>${r.label}</td><td>${fmtNum(r.mass)}</td><td>${f(inf.peak,3)}</td><td>${f(pm,3)}</td><td>${f(inf.pos,2)}</td><td>${f(inf.fwhm,1)}</td><td>${r.mass>0?sgn(rel):'0'}</td><td>${r.mass>0?fmtNum(g.tp*1e4):'0'}</td><td>${r.mass>0?fmtNum(g.teff*1e4):'0'}</td><td>${st}</td></tr>`;
+  }).join('');
+  $('#tbl').innerHTML=head+body+'</tbody></table>';
+
+  /* besaran turunan */
+  const Imax=P.Hmax/P.kcoil, wv=2*Math.PI*P.f*1e6;
+  const chi0=chiLayer(0,'up',P.f*1e6,P), muR=1+chi0[0];
+  const delta=Math.sqrt(2/(wv*MU0*P.sigF*1e6*Math.max(muR,1)))*1e6;
+  const frFMR=GAM*Math.sqrt(Math.max(P.Hk*1e-3*(P.Hk*1e-3+P.Ms),0))/(2*Math.PI)/1e9;
+  let extra='';
+  if(mat.type==='sp'){const V=Math.PI*Math.pow(mat.d*1e-9,3)/6;const tau=mat.tau0*1e-9*Math.exp(Math.min(mat.K*1e3*V/(KB*P.T),60));extra=stat('Frekuensi relaksasi Néel',fmtNum(1/(2*Math.PI*tau)/1e6),'MHz')+stat('Rasio KV terhadap kT',f(mat.K*1e3*V/(KB*P.T),2),'');}
+  if(mat.type==='fm'){const BK=2*mat.K*1e3/(mat.Msp*1e3||1);extra=stat('Medan koersif partikel',f(0.479*BK*1e3,1),'mT')+stat('Frekuensi FMR partikel',f(GAM*BK/(2*Math.PI)/1e9,2),'GHz');}
+  $('#stats').innerHTML=
+    stat('Resistansi DC strip',f(rdc(P)*1000,1),'mohm')+
+    stat('Kedalaman kulit pada H = 0',f(delta,2),'μm')+
+    stat('Susceptibilitas statis pada H = 0',fmtNum(P.axis==='long'?P.Ms/(P.Hk*1e-3):0),'')+
+    stat('Frekuensi FMR pada H = 0',f(frFMR,2),'GHz')+
+    extra+
+    stat('Konstanta kumparan',f(P.kcoil,2),'mT per A')+
+    stat('Arus maksimum',f(Imax,2),'A')+
+    stat('Sensitivitas awal',f(S,1),'% MIR per g')+
+    stat('Batas deteksi massa',isFinite(lod)?fmtNum(lod*1000):'tak terhingga','mg');
+  $('#coilNote').textContent=`Konstanta kumparan sekitar ${f(P.kcoil,1)} mT per A, sehingga medan ${P.Hmax} mT memerlukan arus sekitar ${f(Imax,2)} A.`+(Imax>5?' Arus ini besar dan kawat akan memanas, jadi pertimbangkan lilitan lebih banyak atau pendinginan.':'');
+
+  /* komponen impedansi untuk sampel yang diamati */
+  const oc=curves[obsSel];
+  const aR=oc.map(p=>({x:p.x,y:p.re})), aX=oc.map(p=>({x:p.x,y:p.im})), aZ=oc.map(p=>({x:p.x,y:p.abs}));
+  const cmx=Math.max(...aZ.map(p=>p.y),...aR.map(p=>p.y),...aX.map(p=>p.y)), cst=niceStep(cmx,4), cymax=Math.ceil(cmx*1.05/cst)*cst;
+  drawChart($('#cComp'),{xmin:-P.Hmax,xmax:P.Hmax,ymin:0,ymax:cymax,xticks:ticksFor(-P.Hmax,P.Hmax,xstepF),yticks:ticksFor(0,cymax,cst),
+    xlabel:'H (mT)',ylabel:'Impedansi (ohm)',ml:70,yfmt:v=>fmtNum(v),
+    series:[{pts:aZ,color:'#111',line:true,width:2.2},{pts:aR,color:'#d9631e',line:true,width:1.8,dash:'6 3'},{pts:aX,color:'#1c6fe0',line:true,width:1.8,dash:'2 3'}],
+    legend:[{label:'Modulus',color:'#111',line:true},{label:'Bagian resistif',color:'#d9631e',line:true,dash:'6 3'},{label:'Bagian reaktif',color:'#1c6fe0',line:true,dash:'2 3'}]});
+  $('#compNote').textContent=`Sampel yang diamati adalah ${rows[obsSel].label}. Penambahan bagian resistif di dekat medan nol berasal dari efek kulit dan rugi magnetik.`;
+
+  /* frekuensi */
+  const fr=[];for(let e=0;e<=3.0001;e+=0.125)fr.push(Math.pow(10,e));
+  const fseries=rows.map(r=>({pts:fr.map(fq=>({x:fq,y:peakAt(Object.assign({},P,{f:fq}),mat,r.mass)})),color:r.color,line:true,width:2}));
+  const fy=fseries.flatMap(s=>s.pts.map(p=>p.y)); const fmax=Math.max(...fy,0.5), fst=niceStep(fmax,4), fmx=Math.ceil(fmax*1.05/fst)*fst;
+  drawChart($('#cFreq'),{xlog:true,xmin:1,xmax:1000,ymin:0,ymax:fmx,xticks:[1,10,100,1000],yticks:ticksFor(0,fmx,fst),
+    xlabel:'Frekuensi (MHz)',ylabel:'Puncak MIR (%)',series:fseries,ml:70,yfmt:v=>fmtNum(v),
+    extra:(g,c)=>{el('line',{x1:c.sx(P.f),x2:c.sx(P.f),y1:c.m.t,y2:c.m.t+c.ph,stroke:'#98a2b3','stroke-width':1.4,'stroke-dasharray':'4 3'},g);}});
+
+  /* kalibrasi massa */
+  const mmax=Math.max(0.3,...rows.map(r=>r.mass))*1.25;
+  const cal=[];for(let i=0;i<=30;i++){const m=mmax*i/30;cal.push({x:m,y:peakAt(P,mat,m)});}
+  const cpts=rows.map((r,i)=>({x:r.mass,y:Math.max(...meas[i].pts.map(p=>p.mir)),label:r.label}));
+  const cy=[...cal.map(p=>p.y),...cpts.map(p=>p.y)], cmn=Math.min(...cy,0), cmx2=Math.max(...cy,0.5), cs=niceStep(cmx2-cmn,4);
+  const cy0=Math.floor(cmn/cs)*cs, cy1=Math.ceil(cmx2*1.05/cs)*cs;
+  drawChart($('#cCal'),{xmin:0,xmax:mmax,ymin:cy0,ymax:cy1,xticks:ticksFor(0,mmax,niceStep(mmax,5)),yticks:ticksFor(cy0,cy1,cs),
+    xlabel:'Massa nanopartikel (g)',ylabel:'Puncak MIR (%)',ml:70,xfmt:v=>fmtNum(v),yfmt:v=>fmtNum(v),
+    series:[{pts:cal,color:'#667085',line:true,width:2},{pts:cpts,color:'#111',marker:'diamond',size:6,fill:'#fff',tip:p=>`${p.label}  puncak ${f(p.y,3)} %`}]});
+
+  lastRun={P,mat,rows,meas,curves,infos,renderMain,obsSel};
+  updateObs();
+}
+
+function currentObs(meas,ri){
+  if(!meas||!meas[ri]) return null;
+  const obs=$('#obs'); const pts=meas[ri].pts;
+  const i=Math.min(+obs.value,pts.length-1);
+  return {pt:pts[i],i,n:pts.length};
+}
+function updateObs(){
+  if(!lastRun) return;
+  const {P,rows,meas}=lastRun;
+  const ri=lastRun.obsSel;
+  const o=currentObs(meas,ri); if(!o) return;
+  const p=o.pt;
+  $('#obsLbl').textContent=`Titik ${o.i+1} dari ${o.n} pada sapuan ${p.dir==='up'?'naik':'turun'}`;
+  $('#lvH').textContent=f(p.H,2)+' mT';
+  $('#lvI').textContent=f(p.I,3)+' A';
+  $('#lvZ').textContent=f(p.z,4)+' ohm';
+  $('#lvM').textContent=f(p.mir,2)+' %';
+  $('#lvMass').textContent=fmtNum(rows[ri].mass)+' g';
+  $('#psI').textContent=f(Math.abs(p.I),3)+' A';
+  $('#zDisp').textContent=f(p.z,3)+' ohm';
+  $('#fDisp').textContent=fmtNum(P.f)+' MHz';
+  const inten=Math.min(1,Math.abs(p.Hset)/P.Hmax);
+  document.querySelectorAll('.coilc').forEach(e=>{e.style.filter=`drop-shadow(0 0 ${2+10*inten}px rgba(255,120,0,${0.15+0.8*inten}))`;});
+  const ar=$('#harrow'); ar.setAttribute('stroke-width',String(1.5+4*inten)); ar.style.opacity=String(0.3+0.7*inten);
+  $('#hbG').setAttribute('transform',p.Hset<0?'translate(600 0) scale(-1 1)':'');
+  const cnt=Math.min(46,Math.round(rows[ri].mass*90)); let s='';
+  for(let k=0;k<cnt;k++){const x=274+((k*29)%52)+((k*7)%3), y=157+((k*13)%5); s+=`<circle cx="${x}" cy="${y}" r="1.8"/>`;}
+  $('#parts').innerHTML=s;
+  const up=meas[ri].pts.filter(q=>q.dir==='up').sort((a,b)=>a.H-b.H);
+  const ys=up.map(q=>q.mir), ymx=Math.max(...ys,0.1), ymn=Math.min(...ys,0);
+  const X=h=>752+(h+P.Hmax)/(2*P.Hmax)*156, Y=m=>162-(m-ymn)/(ymx-ymn||1)*70-4;
+  $('#pcCurve').setAttribute('d',up.map((q,k)=>(k?'L':'M')+X(q.H).toFixed(1)+' '+Y(q.mir).toFixed(1)).join(' '));
+  $('#pcCurve').setAttribute('stroke',rows[ri].color);
+  $('#pcDot').setAttribute('cx',X(p.H)); $('#pcDot').setAttribute('cy',Y(p.mir));
+  lastRun.renderMain();
+}
+$('#obs').addEventListener('input',updateObs);
+$('#obsRow').addEventListener('input',schedule);
+
+let timer=null;
+function stopPlay(){clearInterval(timer);timer=null;$('#play').textContent='Putar sapuan';}
+$('#play').addEventListener('click',()=>{
+  if(timer){stopPlay();return;}
+  const obs=$('#obs'); if(+obs.value>=+obs.max) obs.value=0;
+  $('#play').textContent='Jeda';
+  timer=setInterval(()=>{ if(+obs.value>=+obs.max){stopPlay();return;} obs.value=+obs.value+1; updateObs(); },180);
+});
+$('#rerun').addEventListener('click',()=>{seed=Math.floor(Math.random()*1e9);recompute();});
+function resetAll(){refreshOutputs();sensSel.value='nife';applySens();presetSel.value='fe3o4';applyPreset();$('#mpf').value=0.2;$('#mAc').value=20;$('#mCd').value=0.1;$('#mT').value=300;setRows([0,0.1,0.3]);lastRun=null;seed=20261012;recompute();}
+$('#ctlForm').addEventListener('reset',()=>{ setTimeout(resetAll,0); });
+
+$('#dlCsv').addEventListener('click',()=>{
+  if(!lastRun) return;
+  let csv='sampel,massa_g,arah,H_terukur_mT,H_atur_mT,I_A,Z_ohm,MIR_persen\n';
+  lastRun.meas.forEach(r=>r.pts.forEach(p=>{csv+=`"${r.label.replace(/"/g,'""')}",${r.mass},${p.dir==='up'?'naik':'turun'},${p.H.toFixed(4)},${p.Hset.toFixed(3)},${p.I.toFixed(5)},${p.z.toFixed(6)},${p.mir.toFixed(5)}\n`;}));
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='data_simulasi_magnetoimpedansi.csv'; a.click();
+});
+$('#dlPng').addEventListener('click',async()=>{
+  const svgs=[$('#cFull svg'),$('#cZoom svg')].filter(Boolean); if(svgs.length<2) return;
+  const imgs=await Promise.all(svgs.map(s=>new Promise(res=>{const im=new Image();im.onload=()=>res(im);im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(s));})));
+  const sc=2, W=imgs[0].width+imgs[1].width, H=Math.max(imgs[0].height,imgs[1].height);
+  const cv=document.createElement('canvas'); cv.width=W*sc; cv.height=H*sc; const cx=cv.getContext('2d');
+  cx.fillStyle='#fff'; cx.fillRect(0,0,cv.width,cv.height); cx.scale(sc,sc); cx.drawImage(imgs[0],0,0); cx.drawImage(imgs[1],imgs[0].width,0);
+  const a=document.createElement('a'); a.href=cv.toDataURL('image/png'); a.download='kurva_magnetoimpedansi.png'; a.click();
+});
+let rzT=null;
+window.addEventListener('resize',()=>{clearTimeout(rzT);rzT=setTimeout(()=>{if(lastRun)recompute();},150);});
+
+resetAll();
+
+</script>
+</body>
+</html>

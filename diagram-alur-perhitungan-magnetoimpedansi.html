@@ -116,7 +116,7 @@ const LANES = [
   {k:'max',n:'6 · Sensor: Maxwell → Z',s:'zOne()',c:'#b45309'},
   {k:'avg',n:'7 · Perata-rataan: histeresis, H_k, dipolar',s:'zSensor() · zSensorAvg()',c:'#4f46e5'},
   {k:'tot',n:'8 · Total, MIR & derau',s:'totalZ() · refZ() · measure()',c:'#0d9488'},
-  {k:'out',n:'9 · Keluaran, pita & LOD',s:'peakAt() · modelBand()',c:'#a16207'}
+  {k:'out',n:'9 · Keluaran, pita & LOD',s:'peakAt() · sigmaMIR() · modelBand()',c:'#a16207'}
 ];
 const IN = (s,d,p) => ({t:'in',s,d,p});
 const K  = (s,d) => ({t:'k',s,d});
@@ -366,16 +366,18 @@ E('dZp','cpl','(19)','Impedansi seri tambahan lapisan partikel','totalZ()',
    ['l',IN('l','panjang strip (mm)','Sensor')],
    ['w',IN('w','lebar strip (mm)','Sensor')],
    ['η',IN('η','cakupan partikel (1 = film kontinu)','Kalibrasi')],
-   ['n<sub>s</sub>',IN('n<sub>s</sub>','lapisan dua sisi? (1 sisi = 1, dua sisi = 2)','Kalibrasi')]],
+   ['n<sub>s</sub>',IN('n<sub>s</sub>','lapisan dua sisi? (1 sisi = 1, dua sisi = 2; massa per sisi)','Kalibrasi')]],
   [['dZ','ΔZ<sub>p</sub> (Ω)']]);
 E('Bs','cpl','(20)','Medan sebar rata-rata (demagnetisasi)','totalZ()',
-  T`\[B_s=-\eta\,N_{\rm in}\,\varphi\,\mu_0\bar M_p\]`,
+  T`\[B_s=-n_s\,\eta\,N_{\rm in}\,\varphi\,\mu_0\bar M_p\]`,
   [['η',IN('η','cakupan partikel','Kalibrasi')],['N<sub>in</sub>','Nin'],
+   ['n<sub>s</sub>',IN('n<sub>s</sub>','jumlah sisi berlapis (1 atau 2; massa per sisi)','Kalibrasi')],
    ['φ',IN('φ','fraksi volume lapisan','Massa')],['μ₀M̄<sub>p</sub>','avgD.Mp']],
   [['Bs','B<sub>s</sub> (T)']]);
 E('sigs','cpl','(21a)','Lebar sebaran medan sebar dipolar','totalZ()',
-  T`\[\sigma_s=\eta\,C_d\,\varphi\,\mu_0M_s\,\bar s\]`,
+  T`\[\sigma_s=\sqrt{n_s}\,\eta\,C_d\,\varphi\,\mu_0M_s\,\bar s\]`,
   [['η',IN('η','cakupan partikel','Kalibrasi')],
+   ['n<sub>s</sub>',IN('n<sub>s</sub>','jumlah sisi berlapis (sebaran acak independen → √n<sub>s</sub>)','Kalibrasi')],
    ['C<sub>d</sub>',IN('C<sub>d</sub>','faktor sebaran dipolar (parameter bebas)','Massa')],
    ['φ',IN('φ','fraksi volume lapisan','Massa')],
    ['μ₀',kMU0],['M<sub>s</sub>','Msa'],['s̄','avgD.s']],
@@ -395,53 +397,54 @@ E('llg','llg','(8)','Persamaan LLG (dasar teori)','dasar · tidak dihitung langs
   [['γ',kGAM],['μ₀',kMU0],
    ['α',IN('α','redaman Gilbert lapisan magnetik','Sensor')]],
   [['f','linearisasi Smit–Beljers → bentuk χ(A, B, Γ)']],{basis:true});
-E('Nw','llg','(tepi-1)','Faktor demagnetisasi lebar film','chiLayer()',
-  T`\[N_w=\frac{t_f}{t_f+w}\]`,
+E('Nw','llg','(tepi-1)','Faktor demagnetisasi lebar film','layerStiff()',
+  T`\[N_w=\frac{t_f}{t_f+w},\qquad N_y=\mathrm{edgeC}\,N_w,\qquad N_z=1-N_y\]`,
   [['t<sub>f</sub>',IN('t<sub>f</sub>','tebal tiap lapisan magnetik (μm)','Sensor')],
-   ['w',IN('w','lebar strip (mm → ×1000 μm)','Sensor')]],
-  [['Nw','N<sub>w</sub>']]);
-E('Hkeff','llg','(tepi-2)','Medan anisotropi efektif','chiLayer()',
-  T`\[H_{k,\rm eff}=H_{k,i}\pm\mathrm{edgeC}\,N_w\,\mu_0M_s\]`,
-  [['H<sub>k,i</sub>','Hki'],
-   ['edgeC',IN('edgeC','koreksi tepi (0 = mati, 1 = penuh)','Sensor')],
-   ['N<sub>w</sub>','Nw'],
+   ['w',IN('w','lebar strip (mm → ×1000 μm)','Sensor')],
+   ['edgeC',IN('edgeC','koreksi tepi (0 = mati, 1 = penuh)','Sensor')]],
+  [['Ny','N<sub>y</sub>'],['Nz','N<sub>z</sub> = 1 − N<sub>y</sub> (trace = 1)']]);
+E('qyz','llg','(tepi-2)','Koefisien energi q<sub>y</sub>, q<sub>z</sub>','layerStiff()',
+  T`\[e=-Hm_x+\tfrac12q_ym_y^2+\tfrac12q_zm_z^2:\quad(q_y,q_z)=\begin{cases}(H_{k,i}+N_y\mu_0M_s,\;H_{k,i}+N_z\mu_0M_s)&\text{longitudinal}\\ (N_y\mu_0M_s-H_{k,i},\;N_z\mu_0M_s)&\text{transversal}\end{cases}\]`,
+  [['H<sub>k,i</sub>','Hki'],['N<sub>y</sub>','Nw.Ny'],['N<sub>z</sub>','Nw.Nz'],
    ['μ₀M<sub>s</sub>',IN('μ₀M<sub>s</sub>','magnetisasi jenuh lapisan sensor (T)','Sensor')],
-   ['sumbu',IN('sumbu','sumbu mudah: longitudinal (+) / transversal (−)','Sensor')]],
-  [['Hk','H<sub>k,eff</sub> (T)']]);
-E('HpL','llg','(10-L1)','Medan sepanjang magnetisasi (longitudinal)','chiLayer() · long',
-  T`\[H_p=\max\left(s\,H_i,\;-0.95\,H_{k,\rm eff}\right)\]`,
+   ['sumbu',IN('sumbu','sumbu mudah masukan: longitudinal / transversal','Sensor')]],
+  [['qy','q<sub>y</sub> (T) · tanda = sumbu mudah efektif'],['qz','q<sub>z</sub> (T)']]);
+E('HpL','llg','(10-L1)','Medan sepanjang magnetisasi (q<sub>y</sub> &gt; 0)','layerStiff()',
+  T`\[H_p=\max\left(s\,H_i,\;-0.95\,q_y\right)\]`,
   [['s',K('s','cabang magnetisasi +1 dan −1 (dievaluasi dua kali)')],
-   ['H<sub>i</sub>','Hi'],['H<sub>k,eff</sub>','Hkeff'],
+   ['H<sub>i</sub>','Hi'],['q<sub>y</sub>','qyz.qy'],
    ['0,95',K('0,95','batas bawah agar kekakuan tetap positif')]],
   [['Hp','H<sub>p</sub> (T)']]);
-E('AL','llg','(10-L2)','Kekakuan A (longitudinal)','chiLayer() · long',
-  T`\[A=H_{k,\rm eff}+H_p\]`,
-  [['H<sub>k,eff</sub>','Hkeff'],['H<sub>p</sub>','HpL']],
+E('AL','llg','(10-L2)','Kekakuan A (sumbu mudah efektif longitudinal)','layerStiff()',
+  T`\[A=q_y+H_p\]`,
+  [['q<sub>y</sub>','qyz.qy'],['H<sub>p</sub>','HpL']],
   [['A','A (T)']]);
-E('BL','llg','(10-L3)','Kekakuan B (longitudinal)','chiLayer() · long',
-  T`\[B=H_{k,\rm eff}+H_p+\mu_0M_s\]`,
-  [['H<sub>k,eff</sub>','Hkeff'],['H<sub>p</sub>','HpL'],
-   ['μ₀M<sub>s</sub>',IN('μ₀M<sub>s</sub>','magnetisasi jenuh lapisan sensor (T)','Sensor')]],
+E('BL','llg','(10-L3)','Kekakuan B (sumbu mudah efektif longitudinal)','layerStiff()',
+  T`\[B=q_z+H_p\]`,
+  [['q<sub>z</sub>','qyz.qz'],['H<sub>p</sub>','HpL']],
   [['B','B (T)']]);
-E('AT','llg','(10-T1)','Kekakuan A (transversal)','chiLayer() · trans',
+E('Hkt','llg','(10-T0)','Anisotropi transversal efektif (q<sub>y</sub> &lt; 0)','layerStiff()',
+  T`\[H_{k,\rm eff}=-q_y=H_{k,i}-N_y\mu_0M_s\]`,
+  [['q<sub>y</sub>','qyz.qy']],
+  [['Hk','H<sub>k,eff</sub> (T)']]);
+E('AT','llg','(10-T1)','Kekakuan A (sumbu mudah efektif transversal)','layerStiff()',
   T`\[A=\begin{cases}H-H_{k,\rm eff}&H\ge H_{k,\rm eff}\\[2pt] \dfrac{H_{k,\rm eff}^2-H^2}{H_{k,\rm eff}}&H\lt H_{k,\rm eff}\end{cases},\quad H=|H_i|\]`,
-  [['H<sub>i</sub>','Hi'],['H<sub>k,eff</sub>','Hkeff']],
+  [['H<sub>i</sub>','Hi'],['H<sub>k,eff</sub>','Hkt']],
   [['A','A (T)']]);
-E('BT','llg','(10-T2)','Kekakuan B (transversal)','chiLayer() · trans',
-  T`\[B=\begin{cases}H+\mu_0M_s&H\ge H_{k,\rm eff}\\ H_{k,\rm eff}+\mu_0M_s&H\lt H_{k,\rm eff}\end{cases}\]`,
-  [['H<sub>i</sub>','Hi'],['H<sub>k,eff</sub>','Hkeff'],
-   ['μ₀M<sub>s</sub>',IN('μ₀M<sub>s</sub>','magnetisasi jenuh lapisan sensor (T)','Sensor')]],
+E('BT','llg','(10-T2)','Kekakuan B (sumbu mudah efektif transversal)','layerStiff()',
+  T`\[B=\begin{cases}H+q_z&H\ge H_{k,\rm eff}\\ H_{k,\rm eff}+q_z&H\lt H_{k,\rm eff}\end{cases}\]`,
+  [['H<sub>i</sub>','Hi'],['H<sub>k,eff</sub>','Hkt'],['q<sub>z</sub>','qyz.qz']],
   [['B','B (T)']]);
-E('c2T','llg','(10-T3)','Faktor reduksi c² (transversal)','chiLayer() · trans',
+E('c2T','llg','(10-T3)','Faktor reduksi c² (transversal)','layerStiff()',
   T`\[c^2=\begin{cases}1&H\ge H_{k,\rm eff}\\ (H/H_{k,\rm eff})^2&H\lt H_{k,\rm eff}\end{cases}\]`,
-  [['H<sub>i</sub>','Hi'],['H<sub>k,eff</sub>','Hkeff']],
+  [['H<sub>i</sub>','Hi'],['H<sub>k,eff</sub>','Hkt']],
   [['c2','c²']]);
-E('axs','llg','(10-sel)','Pilih arah sumbu mudah','chiLayer()',
-  T`\[(A,B,c^2)=\begin{cases}(A_L,\,B_L,\,1)&\text{longitudinal}\\ (A_T,\,B_T,\,c^2_T)&\text{transversal}\end{cases}\]`,
-  [['sumbu',IN('sumbu','longitudinal / transversal','Sensor')],
+E('axs','llg','(10-sel)','Pilih sumbu mudah efektif dari tanda q<sub>y</sub>','layerStiff()',
+  T`\[(A,B,c^2,H_{k,\rm eff})=\begin{cases}(A_L,\,B_L,\,1,\,q_y)&q_y\gt0\\ (A_T,\,B_T,\,c^2_T,\,-q_y)&q_y\lt0\end{cases}\]`,
+  [['q<sub>y</sub>','qyz.qy'],
    ['A<sub>L</sub>','AL'],['B<sub>L</sub>','BL'],
-   ['A<sub>T</sub>','AT'],['B<sub>T</sub>','BT'],['c²<sub>T</sub>','c2T']],
-  [['A','A'],['B','B'],['c2','c²']]);
+   ['A<sub>T</sub>','AT'],['B<sub>T</sub>','BT'],['c²<sub>T</sub>','c2T'],['H<sub>k,eff</sub>','Hkt']],
+  [['A','A'],['B','B'],['c2','c²'],['Hk','H<sub>k,eff</sub> = |q<sub>y</sub>|']]);
 E('Gam','llg','(11)','Lebar garis resonansi','chiLayer()',
   T`\[\Gamma=\alpha\,\frac{\omega}{\gamma}+\frac{\Delta H_0}{2}\]`,
   [['α',IN('α','redaman Gilbert','Sensor')],['ω<sub>γ</sub>','wg'],
@@ -459,7 +462,7 @@ E('chiL','llg','(10a)','Susceptibilitas lapisan magnetik','chiLayer()',
   [['chi','χ<sub>LLG</sub> kompleks']]);
 E('Ast','llg','(dw-1)','Kekakuan A teramankan','chiLayer()',
   T`\[A_\ast=\max(A,\;0.05\,H_{k,\rm eff},\;10^{-9})\]`,
-  [['A','axs.A'],['H<sub>k,eff</sub>','Hkeff']],
+  [['A','axs.A'],['H<sub>k,eff</sub>','axs.Hk']],
   [['A','A<sub>*</sub> (T)']]);
 E('chidw','llg','(dw-2)','Domain wall Debye (empiris)','chiLayer()',
   T`\[\chi_{dw}=\frac{\mathrm{dwAmp}}{100}\,\frac{\mu_0M_s}{A_\ast}\,\frac{1}{1+j\,f/f_{dw}}\]`,
@@ -540,9 +543,8 @@ E('Rdc','max','(7)','Resistansi DC (uji batas)','rdc()',
    ['t<sub>f</sub>',IN('t<sub>f</sub>','tebal tiap lapisan magnetik (μm)','Sensor')]],
   [['R','R<sub>dc</sub> (Ω) · diagnostik']]);
 E('dsk','max','(3d)','Kedalaman kulit (diagnostik)','delta',
-  T`\[\delta=\sqrt{\frac{2}{\omega\mu_0\mu\sigma_f}}\]`,
-  [['ω','omega'],['μ₀',kMU0],['μ','mu'],
-   ['σ<sub>f</sub>',IN('σ<sub>f</sub>','konduktivitas lapisan magnetik (MS/m)','Sensor')]],
+  T`\[\delta=\frac{1}{\mathrm{Re}\,k_f}\quad\left(\mu\ \text{riil}:\ \sqrt{\tfrac{2}{\omega\mu_0\mu\sigma_f}}\right)\]`,
+  [['k<sub>f</sub>','kf']],
   [['d','δ (m) · diagnostik']]);
 
 /* ================= 7 · PERATA-RATAAN ================= */
@@ -636,7 +638,7 @@ E('dm','out','(23-0)','Langkah massa linear','dm',
    ['φ',IN('φ','fraksi volume lapisan','Massa')],
    ['A<sub>c</sub>',IN('A<sub>c</sub>','luas sebaran (cm²)','Massa')]],
   [['dm','dm (g)']]);
-E('Sens','out','(23-1)','Sensitivitas awal','modelBand()',
+E('Sens','out','(23-1)','Sensitivitas awal','recompute() · peakAt()',
   T`\[S=\frac{P(dm)-P(0)}{dm}\]`,
   [['P(dm), P(0)','peak'],['dm','dm']],
   [['S','S (% per g)']]);
@@ -645,18 +647,18 @@ E('sigpk','out','(23a)','Derau MIR di puncak','sigPk()',
   [['P','peak'],
    ['σ<sub>Z</sub>',IN('σ<sub>Z</sub>','derau relatif impedansi (%)','Derau')]],
   [['s','σ<sub>MIR</sub> (%)']]);
-E('lod','out','(23b)','Batas deteksi massa','modelBand()',
+E('lod','out','(23b)','Batas deteksi massa','recompute()',
   T`\[m_{\rm LOD}=\frac{3\,\sigma_{\rm MIR}}{|S|}\]`,
   [['σ<sub>MIR</sub>','sigpk'],['S','Sens']],
   [['m','m<sub>LOD</sub> (g)']]);
-E('sHt','out','(σ-1)','Derau medan gabungan','sigmaMIR()',
-  T`\[\sigma_{H,\rm tot}=\sqrt{\sigma_H^2+\sigma_{Hr}^2}\]`,
+E('sHt','out','(σ-1)','Derau medan yang relevan untuk sumbu X','sigmaMIR()',
+  T`\[\sigma_{H,\rm eff}=\begin{cases}\sigma_{Hr}&\text{sumbu }H_{\rm read}\ (\text{juga data eksperimen})\\ \sigma_H&\text{sumbu }H_{\rm set}\end{cases}\]`,
   [['σ<sub>H</sub>',IN('σ<sub>H</sub>','jitter medan aktual (mT)','Derau')],
    ['σ<sub>Hr</sub>',IN('σ<sub>Hr</sub>','derau baca probe (mT)','Derau')]],
-  [['s','σ<sub>H,tot</sub> (mT)']]);
+  [['s','σ<sub>H,eff</sub> (mT)']]);
 E('sig','out','(σ-2)','Sigma satu definisi (pita, residu, fit)','sigmaMIR() · slopeAt()',
-  T`\[\sigma=\sqrt{\left(\left|\frac{d\,\mathrm{MIR}}{dH}\right|\sigma_{H,\rm tot}\right)^2+\left[\sqrt2\,\sigma_Z\left(1+\frac{\mathrm{MIR}}{100}\right)\right]^2}\]`,
-  [['MIR(H) dan kemiringannya','MIR'],['σ<sub>H,tot</sub>','sHt'],
+  T`\[\sigma=\sqrt{\left(\left|\frac{d\,\mathrm{MIR}}{dH}\right|\sigma_{H,\rm eff}\right)^2+\left[\sqrt2\,\sigma_Z\left(1+\frac{\mathrm{MIR}}{100}\right)\right]^2}\]`,
+  [['MIR(H) dan kemiringannya','MIR'],['σ<sub>H,eff</sub>','sHt'],
    ['σ<sub>Z</sub>',IN('σ<sub>Z</sub>','derau relatif impedansi (%)','Derau')]],
   [['s','σ(H) (%)']]);
 E('band','out','(σ-3)','Pita model ±1σ','modelBand()',

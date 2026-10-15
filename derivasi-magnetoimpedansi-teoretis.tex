@@ -5,7 +5,7 @@
 \usepackage{booktabs}
 
 \title{Penurunan Persamaan Simulator Magnetoimpedansi Teoretis\\dengan Sensing Nanopartikel\\{\normalsize Penjelasan verbose langkah-demi-langkah (versi revisi)}}
-\author{Disusun dari \texttt{simulator-magnetoimpedansi-teoretis-revisi.html}}
+\author{Disusun dari \texttt{simulator-magnetoimpedansi-teoretis.html}}
 \date{\today}
 
 \begin{document}
@@ -102,6 +102,24 @@ Acuan MIR & kode dan dokumen & Diambil pada medan \emph{aktual} di ujung sapuan.
 Sensitivitas LOD & kode dan dokumen & Langkah $dm$ adaptif pada rezim linear.\\
 Klaim ``sudah diuji'' & kode dan dokumen & Kini tersedia fungsi uji mandiri
 dan hasilnya dibukukan pada Lampiran~\ref{app:uji}.\\
+\midrule
+\multicolumn{3}{l}{\emph{Revisi kedua (verifikasi LLG numerik independen dan Monte Carlo derau)}}\\
+Koreksi tepi, kekakuan luar bidang & kode dan dokumen & $B$ kini memakai
+$N_{z}\mu_{0}M_{s}$ dengan $N_{z}=1-N_{y}$ (trace tensor demagnetisasi satu),
+bukan $\mu_{0}M_{s}$ penuh.\\
+Koreksi tepi melampaui $H_{k}$ transversal & kode dan dokumen & Sumbu mudah
+berbalik ke longitudinal dengan $H_{k}'=N_{y}\mu_{0}M_{s}-H_{k}$, bukan dipotong
+ke $10^{-9}$.\\
+Sigma pita, residu, dan fit & kode dan dokumen & Bergantung sumbu X:
+$\sigma_{Hr}$ untuk $H_{\mathrm{read}}$, $\sigma_{H}$ untuk $H_{\mathrm{set}}$;
+penjumlahan kuadratur keduanya menghitung ganda.\\
+Korelasi derau acuan & dokumen & Nilai harapan $\chi^{2}/N$ tidak bias; yang
+membesar hanya fluktuasinya.\\
+Lapisan dua sisi & kode dan dokumen & $B_{s}\times2$ dan $\sigma_{s}\times\sqrt{2}$
+selain $\Delta Z_{p}\times2$ (massa $m$ per sisi).\\
+Frekuensi resonansi partikel & dokumen & $\omega_{r}=\gamma(B_{K}+|B|)$.\\
+Diagnostik ringkasan & kode & Kedalaman kulit $1/\mathrm{Re}\,k_{f}$ dengan $\mu$
+kompleks; $\chi$ statis dan $f_{r}$ memakai kekakuan terkoreksi tepi.\\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -198,7 +216,7 @@ B \Rightarrow \chi_{\perp,b} \Rightarrow \chi(\omega)
 Panah kanan dibaca ``menghasilkan''.
 Eddy loss logam ditambahkan ke bagian imajiner bila konduktivitas positif.
 Distribusi diameter merata-ratakan ketiga keluaran di atas
-dengan quadrature yang menjaga rata-rata.
+dengan quadrature lognormal yang dibobot volume ($d_{i}^{3}$).
 Fungsi kode tahap ini adalah \texttt{particleResp} dan \texttt{particleAvg}.
 
 Tahap empat mengubah medan efektif menjadi impedansi sensor telanjang.
@@ -234,8 +252,9 @@ Efek distribusi memakai lebar dipolar sebagai berikut
 \begin{equation*}
 (C_{d},\varphi,M_{s},s) \Rightarrow \sigma_{s} \Rightarrow \bar Z
 \end{equation*}
-Cakupan pulau mengecilkan ketiganya, lapisan dua sisi menggandakan
-suku dinamis saja.
+Cakupan pulau mengecilkan ketiganya. Lapisan dua sisi menggandakan
+suku dinamis dan stray field rata-rata, serta mengalikan lebar distribusi
+dengan $\sqrt{2}$.
 
 Tahap enam menjumlahkan semuanya menjadi impedansi total
 (lihat \eqref{eq:22}).
@@ -273,7 +292,8 @@ Tahap sembilan menilai hasil.
 Puncak, sensitivitas awal, dan batas deteksi mengikuti
 \eqref{eq:23a} sampai \eqref{eq:23b}.
 Pita model, residu, dan biaya fit memakai satu definisi sigma yang sama,
-yaitu gabungan turunan kurva kali derau medan plus derau impedansi.
+yaitu gabungan turunan kurva kali derau medan yang relevan untuk sumbu X
+plus derau impedansi.
 Fungsi kode tahap ini adalah \texttt{peakAt}, \texttt{sigmaMIR},
 \texttt{slopeAt}, \texttt{modelBand}, \texttt{modelMIR},
 dan \texttt{nelderMead}.
@@ -516,8 +536,8 @@ Arus aktual yang konsisten dengan medan aktual adalah sebagai berikut.
 \begin{equation*}
 I_{\mathrm{act}} = (H_{\mathrm{act}}-B_{\mathrm{off}})/k_{\mathrm{true}}
 \end{equation*}
-Bila konstanta nol, kode menjaga agar arus menjadi tak-hingga yang jelas
-(Not-a-Number) daripada diam-diam salah.
+Bila konstanta nol, kode mengembalikan NaN (bukan bilangan) yang jelas
+daripada angka yang diam-diam salah.
 
 \subsection{Definisi MIR}
 Rasio magnetoimpedansi didefinisikan terhadap modulus di ujung sapuan.
@@ -582,6 +602,12 @@ Skin-depth didefinisikan sebagai berikut.
 \end{subequations}
 Makin besar frekuensi, konduktivitas, atau permeabilitas,
 makin kecil skin-depth dan arus makin menumpuk di permukaan.
+Bentuk \eqref{eq:3d} hanya berlaku untuk $\mu$ riil. Untuk $\mu$ kompleks,
+kedalaman peluruhan amplitudo adalah kebalikan bagian riil bilangan gelombang,
+dan bentuk inilah yang ditampilkan simulator pada ringkasan.
+\begin{equation*}
+\delta = 1/\mathrm{Re}\,k
+\end{equation*}
 
 \subsection{Solusi simetris pada inti dan lapis magnetik}
 Struktur simetris terhadap tengah.
@@ -785,18 +811,23 @@ Kekakuan luar bidang tetap sebagai berikut.
 \begin{equation*}
 B = H_{k}+\mu_{0}M_{s}\quad\text{untuk}\quad H<H_{k}
 \end{equation*}
-Hanya proyeksi sepanjang medan yang terukur sehingga muncul faktor reduksi.
+Medan RF dari arus berarah $y$ (sepanjang lebar). Medan itu hanya menggerakkan
+komponen yang tegak lurus magnetisasi, yaitu sebesar $\cos\phi$, dan respons
+yang terbaca kembali pada arah $y$ juga terproyeksi $\cos\phi$.
+Karena itu muncul faktor reduksi berikut. Pada $H=0$ magnetisasi sejajar medan
+RF sehingga tidak ada torsi dan $\chi=0$.
 \begin{equation*}
 c_{2} = (H/H_{k})^{2}\quad\text{untuk}\quad H<H_{k}
 \end{equation*}
 \begin{equation*}
 c_{2} = 1\quad\text{untuk}\quad H\ge H_{k}
 \end{equation*}
-Kekakuan dalam bidang nol pada resonansi sebagai berikut.
+Kekakuan dalam bidang lenyap (mode lunak) sebagai berikut.
 \begin{equation*}
 A = 0
 \end{equation*}
-Kondisi resonansi terjadi pada medan berikut.
+Kondisi itu terjadi pada medan berikut, dan di sana $f_{r}\to 0$ sehingga
+suseptibilitas pada frekuensi ukur memuncak.
 \begin{equation*}
 H = H_{k}
 \end{equation*}
@@ -826,6 +857,9 @@ Lebar garis total terdiri dari redaman Gilbert plus inhomogeneous broadening.
 \Gamma = \alpha\,\omega/\gamma+\Delta H_{0}/2
 \label{eq:11}
 \end{equation}
+Suku $\Delta H_{0}/2$ bekerja sebagai redaman konstan (rugi tak bergantung laju)
+sehingga $\chi''$ tidak tepat nol di $\omega=0$. Pengaruhnya pada impedansi tetap
+lenyap di batas DC karena $\mu$ selalu muncul bersama faktor $j\omega$ pada $k_{f}$.
 Jauh di bawah resonansi, penyebut didominasi $AB$ sehingga berlaku limit
 statis sebagai berikut.
 \begin{equation*}
@@ -843,19 +877,60 @@ sepanjang lebar sebagai berikut.
 \begin{equation*}
 N_{w} = \frac{t_{f}}{t_{f}+w}
 \end{equation*}
-Anisotropi bentuk bersifat \emph{aditif} pada medan anisotropi.
-Untuk sumbu mudah longitudinal maka demagnetisasi sepanjang lebar menaikkan
-kekakuan, sedangkan untuk transversal maka ia menurunkannya.
+Parameter edgeC mengatur seberapa besar faktor itu dipasang.
+Karena trace tensor demagnetisasi harus satu (dengan $N_{x}=0$ sepanjang strip),
+faktor tegak lurus bidang ikut berkurang.
 \begin{equation*}
-H_{k,\mathrm{eff}} = H_{k} \pm \mathrm{edgeC}\,N_{w}\,\mu_{0}M_{s}
+N_{y} = \mathrm{edgeC}\,N_{w},\qquad N_{z} = 1-N_{y}
 \end{equation*}
-Tanda plus dipakai untuk longitudinal dan tanda minus dipakai untuk
-transversal. Hanya tebal lapisan magnetik yang ikut, sedangkan tembaga
-tidak ikut. Nilai nol berarti mati sehingga berperilaku tanpa koreksi,
-sedangkan nilai satu berarti koreksi penuh. Satuannya dijaga konsisten
-dengan $t_{f}$ dalam mikrometer dan $w$ dalam milimeter yang dikali seribu.
-Bentuk ini mengganti bentuk perkalian lama yang tidak dapat dibenarkan
-secara fisis.
+Energi per satuan $M_{s}$ (dalam tesla) ditulis dalam komponen $m_{y}$ dan
+$m_{z}$ setelah $m_{x}^{2}$ dieliminasi lewat $m_{x}^{2}=1-m_{y}^{2}-m_{z}^{2}$.
+\begin{equation*}
+e(\mathbf m) = -H\,m_{x}+\tfrac12\,q_{y}\,m_{y}^{2}+\tfrac12\,q_{z}\,m_{z}^{2}
+\end{equation*}
+Suku anisotropi longitudinal $-\tfrac12H_{k}m_{x}^{2}$ menyumbang $H_{k}$
+pada $q_{y}$ maupun $q_{z}$. Suku anisotropi transversal
+$-\tfrac12H_{k}m_{y}^{2}$ hanya menyumbang $-H_{k}$ pada $q_{y}$.
+\begin{equation*}
+\text{longitudinal:}\quad q_{y}=H_{k}+N_{y}\mu_{0}M_{s},\qquad
+q_{z}=H_{k}+N_{z}\mu_{0}M_{s}
+\end{equation*}
+\begin{equation*}
+\text{transversal:}\quad q_{y}=N_{y}\mu_{0}M_{s}-H_{k},\qquad
+q_{z}=N_{z}\mu_{0}M_{s}
+\end{equation*}
+Bila $q_{y}>0$ sumbu mudah efektif sejajar medan (longitudinal), sehingga
+kekakuan Smit--Beljers menjadi sebagai berikut.
+\begin{equation*}
+A = q_{y}+H_{p},\qquad B = q_{z}+H_{p}
+\end{equation*}
+Bila $q_{y}<0$ sumbu mudah efektif transversal dengan anisotropi efektif berikut,
+lalu rumus kasus transversal dipakai dengan $\mu_{0}M_{s}$ diganti $q_{z}$ pada $B$.
+\begin{equation*}
+H_{k,\mathrm{eff}} = -q_{y} = H_{k}-N_{y}\mu_{0}M_{s}
+\end{equation*}
+Dengan edgeC nol, bentuk ini kembali persis ke kasus longitudinal dan transversal
+di atas. Ada dua konsekuensi penting. Pertama, demagnetisasi lebar menaikkan
+kekakuan dalam bidang sebesar $N_{y}\mu_{0}M_{s}$ tetapi \emph{menurunkan}
+kekakuan luar bidang sebesar $N_{y}\mu_{0}M_{s}$ terhadap kasus tanpa tepi.
+Frekuensi Kittel longitudinal di medan nol menjadi sebagai berikut.
+\begin{equation*}
+f_{r} = \frac{\gamma}{2\pi}
+\sqrt{(H_{k}+N_{y}\mu_{0}M_{s})\,(H_{k}+(1-N_{y})\mu_{0}M_{s})}
+\end{equation*}
+Kedua, untuk sumbu transversal, bila $N_{y}\mu_{0}M_{s}>H_{k}$ maka anisotropi
+bentuk menang dan sumbu mudah berbalik ke longitudinal dengan
+$H_{k}'=N_{y}\mu_{0}M_{s}-H_{k}$. Kasus ini realistis untuk strip sempit dan film
+tebal, misalnya $t_{f}=6\ \mu$m dan $w=0.1$ mm memberi
+$N_{w}\mu_{0}M_{s}\approx 85$ mT untuk $\mu_{0}M_{s}=1.5$ T.
+Versi sebelumnya memakai $B$ dengan $\mu_{0}M_{s}$ penuh dan memotong
+$H_{k,\mathrm{eff}}$ negatif ke $10^{-9}$, yang memberi $\chi$ salah sampai
+puluhan kali pada kasus berbalik. Kedua bentuk telah diverifikasi terhadap
+linearisasi LLG numerik independen (galat relatif di bawah $10^{-3}$).
+Hanya tebal lapisan magnetik yang ikut, sedangkan tembaga tidak ikut.
+Satuannya dijaga konsisten dengan $t_{f}$ dalam mikrometer dan $w$ dalam
+milimeter yang dikali seribu. Parameter ini tetap heuristik karena model
+Maxwell satu dimensi sendiri mengandaikan strip tak hingga.
 
 \subsection{Domain wall empiris frekuensi rendah}
 Gerak domain wall menambah suseptibilitas real pada frekuensi rendah.
@@ -867,14 +942,18 @@ Gerak domain wall menambah suseptibilitas real pada frekuensi rendah.
 Bentuk di atas adalah bentuk Debye sehingga bagian real dan bagian imajiner
 ditambahkan secara bersama-sama sebagai berikut.
 \begin{equation*}
-\Delta\chi' = \chi_{0}/(1+u^{2}),\qquad
-\Delta\chi'' = -\chi_{0}\,u/(1+u^{2}),\qquad u=f/f_{\mathrm{dw}}
+\Delta\chi' = \chi_{\mathrm{dw},0}/(1+u^{2}),\qquad
+\Delta\chi'' = -\chi_{\mathrm{dw},0}\,u/(1+u^{2}),\qquad u=f/f_{\mathrm{dw}}
+\end{equation*}
+Di sini amplitudo statisnya adalah sebagai berikut.
+\begin{equation*}
+\chi_{\mathrm{dw},0} = \frac{\mathrm{dwAmp}}{100}\,\frac{\mu_{0}M_{s}}{A_{\ast}}
 \end{equation*}
 Bentuk ini memenuhi relasi Kramers--Kronig. Versi sebelumnya hanya menambah
 bagian real, yang melanggar kausalitas. Frekuensi $5$ MHz adalah pilihan empiris.
 Penyebut diamankan agar tidak divergen sebagai berikut.
 \begin{equation*}
-A_{\ast} = \max(A,\,0.05\,H_{k},\,10^{-9})
+A_{\ast} = \max(A,\,0.05\,H_{k,\mathrm{eff}},\,10^{-9})
 \end{equation*}
 Tanpa pengaman ini, titik nol berikut pada resonansi transversal
 akan menghasilkan nilai tak-hingga.
@@ -992,10 +1071,16 @@ Bentuk real dan imajiner yang dipakai kode adalah sebagai berikut
 u = \omega\,\tau_{N}
 \end{equation*}
 \begin{equation*}
-\mathrm{Re}\,\chi = \chi_{0}/(1+u^{2})
+\mathrm{Re}\,\chi = \chi_{\perp}/(1+u^{2})
 \end{equation*}
 \begin{equation*}
-\mathrm{Im}\,\chi = -\chi_{0}\,u/(1+u^{2})
+\mathrm{Im}\,\chi = -\chi_{\perp}\,u/(1+u^{2})
+\end{equation*}
+Faktor amplitudo momen untuk distribusi dipolar superparamagnetik adalah
+momen rata-rata waktu, karena momen berfluktuasi dengan waktu Neel jauh lebih
+cepat daripada waktu baca satu titik.
+\begin{equation*}
+s_{\mathrm{SPM}} = |L(\xi)|
 \end{equation*}
 
 \subsection{Terblokir: Stoner--Wohlfarth acak plus resonansi}
@@ -1042,7 +1127,7 @@ Versi sebelumnya memakai turunan $\chi_{i}/\cosh^{2}(a)$,
 yang tidak konsisten dengan model superparamagnetik.
 Frekuensi resonansi partikel adalah sebagai berikut.
 \begin{equation}
-\omega_{r} = \gamma\,(B_{K}+B)
+\omega_{r} = \gamma\,(B_{K}+|B|)
 \label{eq:16b}
 \end{equation}
 Respons dinamik berbentuk osilator Lorentz sebagai berikut.
@@ -1074,11 +1159,14 @@ Sehingga faktornya sendiri adalah satu per akar tiga sebagai berikut.
 \begin{equation*}
 s = 1/\sqrt{3}\approx 0.577
 \end{equation*}
-Untuk partikel superparamagnetik, bentuk eksaknya adalah
+Bentuk itu dipakai untuk partikel terblokir yang momennya beku.
+Untuk partikel superparamagnetik kode memakai $s_{\mathrm{SPM}}=|L(\xi)|$ seperti
+di atas. Rata-rata kuadrat proyeksi untuk momen superparamagnetik adalah
 \begin{equation*}
 \langle\cos^{2}\theta\rangle = 1-2L(\xi)/\xi
 \end{equation*}
-dan bentuk itu tidak dipakai pada kode.
+dan bentuk itu tidak dipakai pada kode karena yang relevan adalah momen
+rata-rata waktu.
 
 \subsection{Paramagnetik, diamagnetik, dan eddy loss logam}
 Untuk tipe para dan dia, suseptibilitas volume dianggap konstan.
@@ -1223,8 +1311,22 @@ Permeabilitas partikel adalah sebagai berikut.
 \end{subequations}
 Bentuk pecahan di atas diselesaikan untuk $\mu_{L}$ pada kode
 dengan aritmetika kompleks eksplisit.
-Lapisan itu menambah fluks pada satu muka strip sehingga muncul
-tambahan impedansi seri sebagai berikut.
+Lapisan itu menambah fluks pada satu muka strip.
+Komponen tangensial $H$ kontinu, sehingga di dalam lapisan medan RF sama dengan
+medan permukaan strip.
+\begin{equation*}
+H_{s} = I/(2w)
+\end{equation*}
+Lapisan setebal $t_{\mathrm{eff}}$ menggantikan udara setebal sama, sehingga
+fluks tambahan yang melingkupi arus sepanjang $l$ adalah sebagai berikut.
+\begin{equation*}
+\Delta\Phi = \mu_{0}(\mu_{L}-1)\,H_{s}\,t_{\mathrm{eff}}\,l
+\end{equation*}
+Hukum Faraday memberi tegangan tambahan sebagai berikut.
+\begin{equation*}
+\Delta V = j\omega\,\Delta\Phi
+\end{equation*}
+Membaginya dengan arus memberi tambahan impedansi seri sebagai berikut.
 \begin{equation}
 \Delta Z_{p} = j\,\omega\,\mu_{0}\,(\mu_{L}-1)\,t_{\mathrm{eff}}\,l/(2w)
 \label{eq:19}
@@ -1282,9 +1384,14 @@ B_{s} \to \eta\,B_{s}
 \end{equation*}
 Nilai satu berarti film kontinu dan sama dengan perilaku lama.
 Nilai nol berarti tidak ada interaksi.
-Lapisan dua sisi menggandakan kopling dinamis sebagai berikut.
+Lapisan dua sisi berarti lapisan identik bermassa $m$ di tiap muka.
+Fluks tambahan muncul di kedua muka, medan tangensial rata-rata dari kedua
+lapisan menjumlah pada sensor yang tipis, sedangkan medan dipol acak dari dua
+lapisan independen menjumlah secara kuadratur.
 \begin{equation*}
-\Delta Z_{p} \to 2\,\Delta Z_{p}
+\Delta Z_{p} \to 2\,\Delta Z_{p},\qquad
+B_{s} \to 2\,B_{s},\qquad
+\sigma_{s} \to \sqrt{2}\,\sigma_{s}
 \end{equation*}
 Resistansi kabel termasuk efek kulit sebagai berikut.
 \begin{equation*}
@@ -1367,18 +1474,34 @@ m_{\mathrm{LOD}} = 3\,\sigma_{\mathrm{MIR}}/|S|
 Bila sensitivitas nol, batas menjadi tak-hingga.
 
 \subsection{Satu definisi sigma untuk pita, residu, dan fit}
-Derau medan dipropagasi lewat kemiringan kurva.
-Gabungan derau aktual dan derau baca adalah sebagai berikut.
+Derau medan dipropagasi lewat kemiringan kurva, tetapi derau mana yang
+berperan bergantung pada sumbu X. Bila titik diplot terhadap medan terbaca,
+impedansi dievaluasi pada medan aktual yang berbeda dari bacaan sebesar derau baca.
 \begin{equation*}
-\sigma_{H,\mathrm{tot}} = \sqrt{\sigma_{H}^{2}+\sigma_{Hr}^{2}}
+\mathrm{MIR}(H_{\mathrm{act}})-\mathrm{MIR}(H_{\mathrm{read}})
+\approx -\frac{d\,\mathrm{MIR}}{dH}\,\delta H_{r}
 \end{equation*}
+Fluktuasi aktual $\delta H$ ikut terbaca sehingga tidak menggeser titik dari kurva.
+Bila titik diplot terhadap medan atur, yang menggeser justru $\delta H$.
+\begin{equation*}
+\sigma_{H,\mathrm{eff}} =
+\begin{cases}
+\sigma_{Hr} & \text{sumbu } H_{\mathrm{read}}\\
+\sigma_{H} & \text{sumbu } H_{\mathrm{set}}
+\end{cases}
+\end{equation*}
+Versi sebelumnya menjumlahkan keduanya secara kuadratur, dan uji Monte Carlo
+memperlihatkan bahwa itu menghitung ganda: dengan $\sigma_{H}=0.1$ mT dan
+$\sigma_{Hr}=0$, nilai $\chi^{2}/N$ hanya sekitar $0.03$, padahal seharusnya satu.
+Data eksperimen yang diimpor dianggap memakai medan terbaca, sehingga
+ketidakpastian medan eksperimen dimasukkan ke $\sigma_{Hr}$.
 Suku derau impedansi dalam poin persen adalah sebagai berikut.
 \begin{equation*}
 \sigma_{Z}^{\prime} = \sigma_{Z}\,\sqrt{2}\,(1+m/100)
 \end{equation*}
 Gabungan total adalah sebagai berikut.
 \begin{equation*}
-\sigma = \sqrt{(|d\mathrm{MIR}/dH|\,\sigma_{H,\mathrm{tot}})^{2}
+\sigma = \sqrt{(|d\mathrm{MIR}/dH|\,\sigma_{H,\mathrm{eff}})^{2}
 +{\sigma_{Z}^{\prime}}^{2}}
 \end{equation*}
 Bawahnya dibatasi sangat kecil agar tidak nol persis.
@@ -1401,9 +1524,12 @@ Kecocokan per derajat bebas mengikuti bentuk khi-kuadrat sebagai berikut.
 Nilai sekitar satu berarti konsisten, jauh di atas satu berarti salah model
 sistematis, bukan sekadar kurang derau.
 Perlu dicatat bahwa derau acuan $n_{0}$ dipakai bersama oleh semua titik
-pada satu sampel sehingga antar titik terdapat korelasi common-mode,
-sedangkan $\sigma$ di atas menganggap tiap titik independen, sehingga
-$\chi^{2}/\mathrm{DoF}$ sedikit diremehkan.
+pada satu sampel sehingga antar titik terdapat korelasi common-mode.
+Faktor $\sqrt{2}$ pada $\sigma_{Z}'$ sudah memuat varians marginal acuan,
+sehingga nilai harapan $\chi^{2}/N$ tetap satu (dikonfirmasi Monte Carlo,
+sekitar $0.99$). Korelasi itu hanya membuat $\chi^{2}/\mathrm{DoF}$ berfluktuasi
+lebih lebar antar-pengulangan daripada distribusi khi-kuadrat untuk titik
+independen.
 Model untuk data campuran arah memakai rata-rata naik-turun
 yang menghapus histeresis.
 \begin{equation*}
@@ -1469,7 +1595,7 @@ Keterbatasan struktural yang diketahui dirinci pada Lampiran~\ref{app:empiris}.
 
 Daftar cek beserta statusnya adalah sebagai berikut. Batas DC dan batas
 homogen sudah otomatis dan lulus, demikian pula simetri dan pembalikan
-waktu serta koreksi tepi, domain wall, faktor demagnetisasi, eddy, dan
+waktu serta koreksi tepi (statis, Kittel, dan pembalikan sumbu), domain wall, faktor demagnetisasi, eddy, dan
 suseptibilitas partikel yang juga otomatis dan lulus. Saturasi acuan di
 ujung ditangani melalui peringatan di interface, sedangkan round-trip CSV
 dan uji buta pada massa yang tidak ikut fit belum otomatis sehingga masih
@@ -1488,8 +1614,8 @@ Suku & Status\\
 Skala panjang interaksi & Heuristik sebagaimana didefinisikan lambda
 pada bab kopling.\\
 $C_{d}$ & Parameter bebas yang paling tak pasti pada model.\\
-edgeC & Parameter bebas dengan bentuk aditif sebagaimana dibahas
-pada bab koreksi tepi.\\
+edgeC & Parameter bebas dengan bentuk tensor demagnetisasi (trace satu)
+sebagaimana dibahas pada bab koreksi tepi.\\
 dwAmp dan frekuensi relaksasi 5 MHz & Empiris dengan bentuk Debye kausal.\\
 sigHc dan lebar bawaan tiga persepuluh koersif & Empiris untuk lebar
 peralihan histeresis.\\
@@ -1516,7 +1642,7 @@ sehingga harus dikalibrasi terhadap data eksperimen.
 \section{Hasil uji mandiri}\label{app:uji}
 Uji berikut dijalankan pada kode simulator versi revisi
 (sensor NiFe dengan anisotropi 3 mT, film 1 $\mu$m, tembaga 2 $\mu$m,
-panjang 5 mm, dan lebar 0.5 mm). Semua lulus.
+panjang 5 mm, dan lebar 0.5 mm). Keempat belas uji lulus.
 \begin{center}
 \small
 \begin{tabular}{p{0.46\textwidth}p{0.42\textwidth}}
@@ -1529,6 +1655,10 @@ Batas homogen, $R_{\mathrm{dc}}kt\coth kt$ (50 MHz) & galat relatif $9\times10^{
 Simetri medan plus-minus & galat $0$\\
 Pembalikan waktu dengan koersif & galat $0$\\
 Koreksi tepi aditif & suseptibilitas statis $200.160$ (sama dengan teori)\\
+Kittel dengan tepi, trace $N=1$ & $f_{r}=1.9819$ GHz, $\chi'$ berganti tanda
+dalam $\pm0.1\%$ (kode lama gagal)\\
+Tepi melampaui $H_{k}$ transversal & $\chi(0)=27.085$ (sama dengan
+$M_{s}/(N_{w}M_{s}-H_{k})$)\\
 Domain wall Debye & beda real $16.667$, beda imajiner $-16.667$\\
 Faktor dalam bidang film tipis & $1.6\times10^{-10}$\\
 Faktor dalam bidang menuju bola & $0.3332$ (menuju sepertiga)\\
@@ -1540,6 +1670,13 @@ Distribusi diameter $\sigma_{D}\to0$ & galat $10^{-11}$\\
 \bottomrule
 \end{tabular}
 \end{center}
+Selain uji di atas, dua verifikasi independen dijalankan di luar simulator.
+Pertama, $\chi$ dari \texttt{chiLayer} dibandingkan dengan linearisasi LLG
+numerik yang menghitung kekakuan langsung dari energi pada bola satuan, untuk
+kedua sumbu, beberapa medan, frekuensi 10 MHz dan 1 GHz, serta edgeC 0, 1, dan 50,
+dengan galat relatif di bawah $10^{-3}$. Kedua, $Z$ dari \texttt{zOne}
+dibandingkan dengan integrasi Runge--Kutta persamaan difusi melintasi inti dan
+lapisan magnetik, yang cocok sampai tujuh digit dari 1 MHz sampai 1 GHz.
 Uji ini memeriksa konsistensi internal dan batas analitik.
 Uji itu tidak menggantikan validasi terhadap data eksperimen.
 

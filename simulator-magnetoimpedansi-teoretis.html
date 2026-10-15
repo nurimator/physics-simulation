@@ -206,7 +206,7 @@ th{font-weight:600;color:#344054;background:#fafbfc;font-size:12px}
     <div class="field"><span>Koreksi tepi edgeC (0=mati, 1=penuh)</span><input type="number" id="edgeC" step="any" value="0" form="ctlForm"></div>
     <div class="field"><span>Dinding domain dwAmp (% χ, &lt;~5MHz)</span><input type="number" id="dwAmp" step="any" value="0" form="ctlForm"></div>
    </div>
-   <p class="note">sigHc melebarkan switching koersif; edgeC menggeser Hk efektif sebesar ±N_w·μ0Ms dengan N_w = t_f/(t_f+w) (tanda + untuk longitudinal, − untuk transversal; hanya lapisan magnetik); dwAmp menambah relaksasi Debye 5 MHz (bagian real dan imajiner) dan 0 = mati.</p>
+   <p class="note">sigHc melebarkan switching koersif; edgeC memasang demagnetisasi penampang N_y = edgeC·N_w dengan N_w = t_f/(t_f+w) dan N_z = 1 − N_y (hanya lapisan magnetik), sehingga Hk efektif bergeser ±N_y·μ0Ms (+ longitudinal, − transversal) dan kekakuan keluar bidang memakai N_z·μ0Ms; bila N_y·μ0Ms melampaui Hk transversal, sumbu mudah berbalik ke longitudinal; dwAmp menambah relaksasi Debye 5 MHz (bagian real dan imajiner) dan 0 = mati.</p>
   </details>
 
 <details class="card" open>
@@ -225,9 +225,9 @@ th{font-weight:600;color:#344054;background:#fafbfc;font-size:12px}
   <div class="field"><span>Offset medan tetap Boff: Bumi + remanen (mT)</span><input type="number" id="Boff" step="any" value="0" form="ctlForm"></div>
   <div class="field"><span>Derau baca Hall probe sigHr, hanya sumbu X (mT)</span><input type="number" id="sigHr" step="any" value="0" form="ctlForm"></div>
   <div class="field"><span>Cakupan partikel η (0-1, 1=film kontinu)</span><input type="number" id="eta" step="0.01" value="1" form="ctlForm"></div>
-  <label class="chk"><input type="checkbox" id="dblSide" form="ctlForm"> Lapisan partikel dua sisi (ΔZp ×2)</label>
+  <label class="chk"><input type="checkbox" id="dblSide" form="ctlForm"> Lapisan partikel dua sisi, massa per sisi (ΔZp ×2, Bs ×2, σs ×√2)</label>
   <div class="field"><span>Skin kabel RcSkin (ohm/√MHz, 0=mati)</span><input type="number" id="RcSkin" step="any" value="0" form="ctlForm"></div>
-  <p class="note">sigH di atas = fluktuasi medan aktual (masuk fisika Z). sigHr = salah baca probe (hanya menggeser titik di sumbu X). CSV kini menyimpan H_atur, H_aktual, H_terbaca, I_cmd, I_aktual.</p>
+  <p class="note">sigH di atas = fluktuasi medan aktual (masuk fisika Z). sigHr = salah baca probe (hanya menggeser titik di sumbu X). Pada plot terhadap H_terbaca hanya sigHr yang menyebarkan titik di sekitar kurva, sedangkan pada plot terhadap H_atur hanya sigH; pita, residu, dan χ² mengikuti aturan ini (data eksperimen dianggap memakai H_terbaca, jadi isikan ketidakpastian medan eksperimen ke sigHr). CSV kini menyimpan H_atur, H_aktual, H_terbaca, I_cmd, I_aktual.</p>
   <div class="field"><span>Impor CSV eksperimen (format unduhan CSV atau kolom H,MIR)</span><input type="file" id="expCsv" accept=".csv,.txt" form="ctlForm"></div>
   <div class="btns" style="margin-bottom:8px">
     <button type="button" id="clearExp">Hapus data eksperimen</button>
@@ -272,7 +272,7 @@ th{font-weight:600;color:#344054;background:#fafbfc;font-size:12px}
     <p class="note">Garis adalah model tanpa derau dan titik adalah puncak data terukur pada tiap sampel.</p></div>
 </div>
 
-<div class="card" style="margin-top:16px"><h2>Uji mandiri fisika</h2><p class="note" style="margin:0 0 8px">Menjalankan uji batas DC, batas homogen, simetri, pembalikan waktu, koreksi tepi, dinding domain, faktor demagnetisasi, rugi eddy, dan susceptibilitas partikel memakai pengaturan sensor saat ini.</p><div class="btns" style="margin-bottom:10px"><button type="button" id="runTest" class="pri">Jalankan uji mandiri</button></div><div id="testOut" style="overflow-x:auto"></div></div>
+<div class="card" style="margin-top:16px"><h2>Uji mandiri fisika</h2><p class="note" style="margin:0 0 8px">Menjalankan uji batas DC, batas homogen, simetri, pembalikan waktu, koreksi tepi (statis, Kittel dengan trace N = 1, dan pembalikan sumbu mudah), dinding domain, faktor demagnetisasi, rugi eddy, dan susceptibilitas partikel memakai pengaturan sensor saat ini.</p><div class="btns" style="margin-bottom:10px"><button type="button" id="runTest" class="pri">Jalankan uji mandiri</button></div><div id="testOut" style="overflow-x:auto"></div></div>
 
 <div class="card theory" style="margin-top:16px">
   <h2>Teori dan persamaan yang dipakai simulator</h2>
@@ -311,7 +311,7 @@ th{font-weight:600;color:#344054;background:#fafbfc;font-size:12px}
   <div class="eq"><span><i>τ</i><sub>N</sub> = <i>τ</i><sub>0</sub> exp( <i>K V</i> / <i>k</i><sub>B</sub><i>T</i> ) <span class="gap"></span><i>χ</i>(<i>ω</i>) = <i>χ</i><sub>⊥</sub> / (1 + j<i>ω τ</i><sub>N</sub>)</span><span class="en">(14)</span></div>
   <p><b>Feromagnetik terblokir.</b> Untuk ansambel partikel beranisotropi uniaksial dengan orientasi acak, model Stoner dan Wohlfarth memberi susceptibilitas awal, medan anisotropi, dan medan koersif berikut. Respons dinamis didekati dengan resonansi Landau Lifshitz dan magnetisasi statis dengan fungsi tanh yang bergeser sebesar medan koersif sehingga muncul histeresis. Medan RF sensor tegak lurus terhadap medan bias, sehingga yang dipakai pada kopling adalah susceptibilitas transversal <i>χ</i><sub>⊥</sub> = <i>χ</i><sub>i</sub> / (1 + |<i>B</i>| / (1.5 <i>B</i><sub>K</sub>)), yang bernilai <i>χ</i><sub>i</sub> di medan nol dan menuju <i>μ</i><sub>0</sub><i>M</i><sub>s</sub>/<i>B</i> di medan tinggi (sama dengan batas sekan superparamagnetik). Histeresis hanya masuk lewat magnetisasi <i>M</i>. Bentuk <i>χ</i><sub>⊥</sub> ini adalah interpolasi heuristik.</p>
   <div class="eq"><span><i>χ</i><sub>i</sub> = <i>μ</i><sub>0</sub><i>M</i><sub>s</sub><sup>2</sup> / (3<i>K</i>) <span class="gap"></span><i>B</i><sub>K</sub> = 2<i>K</i> / <i>M</i><sub>s</sub> <span class="gap"></span><i>B</i><sub>c</sub> ≈ 0.479 <i>B</i><sub>K</sub></span><span class="en">(15)</span></div>
-  <div class="eq"><span><i>M</i> = <i>M</i><sub>s</sub> tanh[ <i>χ</i><sub>i</sub> (<i>B</i> ∓ <i>B</i><sub>c</sub>) / (<i>μ</i><sub>0</sub><i>M</i><sub>s</sub>) ] <span class="gap"></span><i>χ</i>(<i>ω</i>) = <i>χ</i><sub>⊥</sub> / [ 1 − (<i>ω</i>/<i>ω</i><sub>r</sub>)<sup>2</sup> + 2j<i>α</i><sub>p</sub> <i>ω</i>/<i>ω</i><sub>r</sub> ] <span class="gap"></span><i>ω</i><sub>r</sub> = <i>γ</i> (<i>B</i><sub>K</sub> + <i>B</i>)</span><span class="en">(16)</span></div>
+  <div class="eq"><span><i>M</i> = <i>M</i><sub>s</sub> tanh[ <i>χ</i><sub>i</sub> (<i>B</i> ∓ <i>B</i><sub>c</sub>) / (<i>μ</i><sub>0</sub><i>M</i><sub>s</sub>) ] <span class="gap"></span><i>χ</i>(<i>ω</i>) = <i>χ</i><sub>⊥</sub> / [ 1 − (<i>ω</i>/<i>ω</i><sub>r</sub>)<sup>2</sup> + 2j<i>α</i><sub>p</sub> <i>ω</i>/<i>ω</i><sub>r</sub> ] <span class="gap"></span><i>ω</i><sub>r</sub> = <i>γ</i> (<i>B</i><sub>K</sub> + |<i>B</i>|)</span><span class="en">(16)</span></div>
   <p><b>Paramagnetik dan diamagnetik.</b> Susceptibilitas volume <i>χ</i><sub>V</sub> dianggap konstan dan nyata, dan magnetisasi sebanding dengan medan.</p>
 
   <h3>5. Pengaruh nanopartikel pada sensor</h3>
@@ -345,7 +345,8 @@ th{font-weight:600;color:#344054;background:#fafbfc;font-size:12px}
     <li>Sebaran medan dipolar acak sebenarnya berekor berat (mendekati Lorentzian), sedangkan kuadratur Gauss Hermite mengasumsikan sebaran Gaussian sehingga ekornya diremehkan.</li>
     <li>Sebaran diameter lognormal dirata-rata dengan bobot volume. Diameter pada panel adalah rata-rata berbobot jumlah.</li>
     <li>Kombinasi tanh dengan <i>B</i><sub>c</sub> = 0.479 <i>B</i><sub>K</sub> memberi remanen sekitar 0.31 <i>M</i><sub>s</sub>, bukan 0.5 <i>M</i><sub>s</sub> seperti model Stoner Wohlfarth murni.</li>
-    <li>Derau acuan dipakai bersama oleh semua titik satu sampel (korelasi common mode), sedangkan σ pada pita dan χ² menganggap titik independen, sehingga χ²/DoF sedikit diremehkan. Model untuk fit data campuran arah merata-ratakan sapuan naik dan turun sehingga histeresis hilang.</li>
+    <li>Derau acuan dipakai bersama oleh semua titik satu sampel (korelasi common mode). σ pada pita dan χ² memakai varians marginal yang benar, sehingga nilai harapan χ²/N tetap 1, tetapi korelasi membuat χ²/DoF berfluktuasi lebih lebar antar-pengulangan daripada distribusi χ² untuk titik independen. Model untuk fit data campuran arah merata-ratakan sapuan naik dan turun sehingga histeresis hilang.</li>
+    <li>Pelebaran Δ<i>H</i><sub>0</sub>/2 dipasang sebagai redaman konstan (rugi tak bergantung laju), sehingga <i>χ</i>″ tidak menuju nol tepat di <i>ω</i> = 0. Pengaruhnya pada <i>Z</i> tetap lenyap di batas DC karena <i>μ</i> selalu muncul bersama faktor j<i>ω</i>.</li>
     <li>Respons Néel memakai waktu lompat penghalang τ<sub>N</sub> untuk seluruh respons transversal, dan pemilihan jenis partikel (superparamagnetik atau terblokir) dilakukan manual. Rasio KV/kT ditampilkan pada ringkasan sebagai petunjuk, dengan peralihan sekitar 25.</li>
   </ul>
 
@@ -386,24 +387,31 @@ const GH_W=[0.000548269,0.0307571,0.240123,0.457143,0.240123,0.0307571,0.0005482
 function langevin(x){ if(Math.abs(x)<1e-3) return x/3-x*x*x/45; return 1/Math.tanh(x)-1/x; }
 
 /* ===== 1. Permeabilitas lapisan magnetik dari persamaan LLG dan Smit Beljers ===== */
+/* Kekakuan Smit Beljers dari energi e(m) = -H mx + (qy/2) my^2 + (qz/2) mz^2 (satuan tesla), dengan mx^2 dieliminasi.
+   Anisotropi longitudinal -(Hk/2)mx^2 memberi qy = qz = Hk; anisotropi transversal -(Hk/2)my^2 memberi qy = -Hk.
+   Demagnetisasi penampang (koreksi tepi) memberi Ny = edgeC*Nw, Nw = tf/(tf+w) (penampang elips), dan Nz = 1 - Ny (trace tensor = 1).
+   qy > 0 berarti sumbu mudah efektif longitudinal, qy < 0 berarti transversal; bila Ny*Ms melampaui Hk transversal, sumbu mudah berbalik ke longitudinal. */
+function layerStiff(Hm,S,sOv){
+  const Ms=S.Ms, Hk0=(S.Hk||0)*1e-3;
+  const Nw=S.tf/(S.tf+Math.max(S.wid*1000,1e-6)), Ny=(S.edgeC||0)*Nw, Nz=1-Ny;
+  let qy,qz;
+  if(S.axis==='long'){qy=Math.max(Hk0+Ny*Ms,1e-9);qz=Hk0+Nz*Ms;}
+  else{qy=Ny*Ms-Hk0;qz=Nz*Ms;}
+  const h=Hm*1e-3;
+  if(qy>0){
+    /* sumbu mudah efektif sejajar medan. Hp adalah komponen medan sepanjang magnetisasi, s adalah arah magnetisasi terhadap sumbu x */
+    const s=(sOv!==undefined)?sOv:(h>=0?1:-1);
+    const Hp=Math.max(s*h,-0.95*qy);
+    return {A:qy+Hp,B:qz+Hp,c2:1,Hke:qy};
+  }
+  const Hk=Math.max(-qy,1e-9), H=Math.abs(h);
+  if(H>=Hk) return {A:H-Hk,B:H+qz,c2:1,Hke:Hk};
+  return {A:(Hk*Hk-H*H)/Hk,B:Hk+qz,c2:(H/Hk)*(H/Hk),Hke:Hk};
+}
 /* Hm dalam mT, f dalam Hz. S.axis bernilai long atau trans. Mengembalikan susceptibilitas kompleks chi dengan mu = 1 + chi. */
 function chiLayer(Hm,dir,f,S,sOv){
   const w=2*Math.PI*f, wg=w/GAM, Ms=S.Ms;
-  /* koreksi tepi aditif: Hk_eff = Hk +/- edgeC*Nw*mu0Ms, Nw = tf/(tf+w) (penampang elips); + untuk long, - untuk trans; edgeC=0 mati */
-  const Nw=S.tf/(S.tf+Math.max(S.wid*1000,1e-6)), edgeSign=(S.axis==='long')?1:-1;
-  const Hk=Math.max((S.Hk||0)*1e-3+edgeSign*(S.edgeC||0)*Nw*Ms,1e-9);
-  let A,B,c2=1;
-  if(S.axis==='long'){
-    /* sumbu mudah sejajar medan. Hp adalah komponen medan sepanjang magnetisasi, s adalah arah magnetisasi terhadap sumbu x */
-    const h=Hm*1e-3;
-    const s=(sOv!==undefined)?sOv:(h>=0?1:-1);
-    const Hp=Math.max(s*h,-0.95*Hk);
-    A=Hk+Hp; B=Hk+Hp+Ms;
-  }else{
-    const H=Math.abs(Hm)*1e-3;
-    if(H>=Hk){A=H-Hk;B=H+Ms;}
-    else{A=(Hk*Hk-H*H)/Hk;B=Hk+Ms;c2=(H/Hk)*(H/Hk);}
-  }
+  const st=layerStiff(Hm,S,sOv), A=st.A, B=st.B, c2=st.c2, Hk=st.Hke;
   const G=Math.max(S.alpha*wg+S.dH0*1e-3/2,1e-9);
   /* chi = Ms (B + jG) / ((A + jG)(B + jG) - (w/gamma)^2) */
   const den=[A*B-G*G-wg*wg,G*(A+B)];
@@ -538,8 +546,9 @@ function totalZ(Hm,dir,P,mat,mass){
     const g=layerGeom(P,mat,mass);
     const pr=particleAvg(Hm*1e-3,dir,mat,f,P.T);
     const eta=(P.eta===undefined?1:P.eta);  /* cakupan islands: 1=film kontinu (lama), <1 mengecilkan Bs & σ */
-    Bs=-eta*g.N*P.pf*pr.Mp;                /* medan sebar rata rata dalam tesla */
-    sig=eta*P.Cd*P.pf*MU0*(mat.Msp||0)*1e3*pr.s; /* sebaran medan sebar dalam tesla */
+    const nS=P.dblSide?2:1;                 /* lapisan identik (massa m per sisi) di kedua muka: medan sebar rata-rata menjumlah, sebaran acak independen menjumlah kuadratur */
+    Bs=-nS*eta*g.N*P.pf*pr.Mp;             /* medan sebar rata rata dalam tesla */
+    sig=Math.sqrt(nS)*eta*P.Cd*P.pf*MU0*(mat.Msp||0)*1e3*pr.s; /* sebaran medan sebar dalam tesla */
     /* Maxwell Garnett untuk permeabilitas efektif lapisan */
     const mup=[1+pr.chi[0],pr.chi[1]];
     const q=cdiv([mup[0]-1,mup[1]],[mup[0]+2,mup[1]]);
@@ -548,7 +557,7 @@ function totalZ(Hm,dir,P,mat,mass){
     const k=w*MU0*g.teff*1e-2*(P.len*1e-3)/(2*P.wid*1e-3);
     dZ=[-k*muL[1],k*(muL[0]-1)];             /* j w mu0 (muL-1) teff l / (2 w), dengan muL = mu' + j*im */
     dZ=[eta*dZ[0],eta*dZ[1]];               /* cakupan: hanya fraksi eta yang berinteraksi */
-    if(P.dblSide) dZ=[2*dZ[0],2*dZ[1]];      /* lapisan dua sisi */
+    dZ=[nS*dZ[0],nS*dZ[1]];                 /* lapisan dua sisi: fluks tambahan di kedua muka */
   }
   const Hc=Hm+Bs*1e3;
   let re=0,im=0;
@@ -647,6 +656,13 @@ function selfTest(P0){
     {const S=Object.assign({},base,{edgeC:1,dH0:0,alpha:0}), c=chiLayer(0,'up',1e3,S);
      const Nw=S.tf/(S.tf+S.wid*1000), ch=S.Ms/(S.Hk*1e-3+Nw*S.Ms);
      add('Koreksi tepi aditif: chi(0) = Ms/(Hk + Nw Ms)',rel(c[0],ch)<1e-4,`chi = ${c[0].toFixed(3)}, teori = ${ch.toFixed(3)}, Nw = ${Nw.toFixed(5)}`);}
+    {const S=Object.assign({},base,{edgeC:1,dH0:0,alpha:0}), Nw=S.tf/(S.tf+S.wid*1000), Hk=S.Hk*1e-3;
+     const fr=GAM/(2*Math.PI)*Math.sqrt((Hk+Nw*S.Ms)*(Hk+(1-Nw)*S.Ms));
+     const lo=chiLayer(0,'up',0.999*fr,S)[0], hi=chiLayer(0,'up',1.001*fr,S)[0];
+     add('Kittel dengan tepi: f_r = (γ/2π)√[(Hk+Nw Ms)(Hk+(1−Nw)Ms)], trace N = 1',lo>0&&hi<0,`f_r = ${(fr/1e9).toFixed(4)} GHz, χ'(0.999 f_r) = ${lo.toFixed(1)}, χ'(1.001 f_r) = ${hi.toFixed(1)}`);}
+    {const S=Object.assign({},base,{axis:'trans',edgeC:20,dH0:0,alpha:0}), Nw=S.tf/(S.tf+S.wid*1000), D=20*Nw*S.Ms-S.Hk*1e-3;
+     const c=chiLayer(0,'up',1e3,S)[0];
+     add('Tepi melampaui Hk transversal: sumbu mudah berbalik, χ(0) = Ms/(Nw Ms − Hk)',D>0&&rel(c,S.Ms/D)<1e-4,`chi = ${c.toFixed(3)}, teori = ${(S.Ms/D).toFixed(3)}`);}
     {const c0=chiLayer(0,'up',5e6,base), c1=chiLayer(0,'up',5e6,Object.assign({},base,{dwAmp:10}));
      const dr=c1[0]-c0[0], di=c1[1]-c0[1];
      add('Dinding domain kausal: Debye, Im = -Re di f = 5 MHz',dr>0&&Math.abs(dr+di)<1e-6*dr,`dRe = ${dr.toFixed(4)}, dIm = ${di.toFixed(4)}`);}
@@ -991,9 +1007,11 @@ function interpModel(curve,x){
   }
   return NaN;
 }
-/* Satu definisi sigma (dipakai band, residu, dan cost fit — tidak ada lagi faktor hardcoded). */
-function sigmaMIR(dmdh,m,P){
-  const sigH=Math.hypot(P.sigH||0,P.sigHr||0);
+/* Satu definisi sigma (dipakai band, residu, dan cost fit — tidak ada lagi faktor hardcoded).
+   Derau medan yang menggeser titik dari kurva bergantung sumbu X: terhadap H_terbaca, Z dievaluasi di H_akt = H_baca - δHr
+   sehingga hanya sigHr yang berperan; terhadap H_atur, hanya fluktuasi aktual sigH. Data eksperimen diasumsikan memakai H_terbaca. */
+function sigmaMIR(dmdh,m,P,axis){
+  const sigH=(axis==='set')?(P.sigH||0):(P.sigHr||0);
   const sZ=(P.sigZ||0)*Math.SQRT2*(1+m/100);
   return Math.max(Math.hypot(Math.abs(dmdh)*sigH,sZ),1e-6);
 }
@@ -1012,11 +1030,11 @@ function slopeAt(curve,i){
   return d/h;
 }
 /* Pita model ±1σ analitik: sigma dari derau Z + propagasi derau medan via kemiringan dMIR/dH. */
-function modelBand(curve,P){
+function modelBand(curve,P,axis){
   const lo=[],hi=[];
   for(let i=0;i<curve.length;i++){
     const c=curve[i];
-    const s=sigmaMIR(slopeAt(curve,i),c.y,P);
+    const s=sigmaMIR(slopeAt(curve,i),c.y,P,axis);
     lo.push({x:c.x,y:c.y-s}); hi.push({x:c.x,y:c.y+s});
   }
   return {lo,hi};
@@ -1112,7 +1130,7 @@ function recompute(){
     const showBand=$('#showBand')&&$('#showBand').checked;
     if(showBand){
       curves.forEach((c,i)=>{
-        const b=modelBand(c,P);
+        const b=modelBand(c,P,P.showSet?'set':'read');
         out.unshift({pts:modPts(b.hi),color:rows[i].color,line:true,width:1,opacity:.25});
         out.unshift({pts:modPts(b.lo),color:rows[i].color,line:true,width:1,opacity:.25});
       });
@@ -1175,16 +1193,17 @@ function recompute(){
 
   /* besaran turunan */
   const Imax=P.kcoil>0?P.Hmax/P.kcoil:NaN, wv=2*Math.PI*P.f*1e6;
-  const chi0=chiLayer(0,'up',P.f*1e6,P), muR=1+chi0[0];
-  const delta=Math.sqrt(2/(wv*MU0*P.sigF*1e6*Math.max(muR,1)))*1e6;
-  const frFMR=GAM*Math.sqrt(Math.max(P.Hk*1e-3*(P.Hk*1e-3+P.Ms),0))/(2*Math.PI)/1e9;
+  const chi0=chiLayer(0,'up',P.f*1e6,P), kf0=csqrt(cmul([0,wv*MU0*P.sigF*1e6],[1+chi0[0],chi0[1]]));
+  const delta=1e6/kf0[0]; /* kedalaman kulit = 1/Re(k_f) dengan mu kompleks */
+  const st0=layerStiff(0,P,1), chiStat=st0.c2*P.Ms/st0.A;
+  const frFMR=GAM*Math.sqrt(Math.max(st0.A*st0.B,0))/(2*Math.PI)/1e9;
   let extra='';
   if(mat.type==='sp'){const V=Math.PI*Math.pow(mat.d*1e-9,3)/6;const tau=mat.tau0*1e-9*Math.exp(Math.min(mat.K*1e3*V/(KB*P.T),60));extra=stat('Frekuensi relaksasi Néel',fmtNum(1/(2*Math.PI*tau)/1e6),'MHz')+stat('Rasio KV terhadap kT',f(mat.K*1e3*V/(KB*P.T),2),'');}
   if(mat.type==='fm'){const BK=2*mat.K*1e3/(mat.Msp*1e3||1);extra=stat('Medan koersif partikel',f(0.479*BK*1e3,1),'mT')+stat('Frekuensi FMR partikel',f(GAM*BK/(2*Math.PI)/1e9,2),'GHz');}
   $('#stats').innerHTML=
     stat('Resistansi DC strip',f(rdc(P)*1000,1),'mohm')+
     stat('Kedalaman kulit pada H = 0',f(delta,2),'μm')+
-    stat('Susceptibilitas statis pada H = 0',fmtNum(P.axis==='long'?P.Ms/(P.Hk*1e-3):0),'')+
+    stat('Susceptibilitas statis pada H = 0',fmtNum(chiStat),'')+
     stat('Frekuensi FMR pada H = 0',f(frFMR,2),'GHz')+
     extra+
     stat('Konstanta kumparan',f(P.kcoil,2),'mT per A')+
@@ -1231,7 +1250,7 @@ function recompute(){
         const r=d.mir-m;
         const fi=c.findIndex(p=>p.x>=d.H);
         const i1=fi<0?c.length-1:Math.max(0,fi-1);
-        const sig=sigmaMIR(slopeAt(c,Math.max(0,Math.min(i1,c.length-1))),m,P);
+        const sig=sigmaMIR(slopeAt(c,Math.max(0,Math.min(i1,c.length-1))),m,P,'read');
         s+=r;s2+=r*r;chi2+=(r/sig)*(r/sig);mx=Math.max(mx,Math.abs(r));n++;
       });
       const bias=n?s/n:NaN, rmse=n?Math.sqrt(s2/n):NaN, chiR=n?chi2/Math.max(n,1):NaN;
@@ -1239,7 +1258,7 @@ function recompute(){
       const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
       html+=`<tr><td>${esc(lb)}</td><td>${esc(rows[bi].label)}${same>=0?'':' (oto)'}</td><td>${n}</td><td>${f(bias,3)}</td><td>${f(rmse,3)}</td><td>${f(chiR,2)}</td><td>${f(mx,3)}</td><td>${badge}</td></tr>`;
     });
-    html+='</tbody></table><p class="note">Residu = EXP − model tanpa derau (rata-rata naik+turun untuk fit; tabel pakai kurva naik). σ tunggal = √[(dMIR/dH·σH)² + σMIR²]. χ²/DoF≈1 konsisten; ≫1 sistematis = salah model, bukan tambah derau. Mode ketat (label sama) untuk klaim kuantitatif.</p>';
+    html+='</tbody></table><p class="note">Residu = EXP − model tanpa derau (rata-rata naik+turun untuk fit; tabel pakai kurva naik). σ tunggal = √[(dMIR/dH·σHr)² + σMIR²] (sumbu H_terbaca). χ²/DoF≈1 konsisten; ≫1 sistematis = salah model, bukan tambah derau. Mode ketat (label sama) untuk klaim kuantitatif.</p>';
     if(box) box.innerHTML=html;
   })();
 
@@ -1348,7 +1367,7 @@ function expCost(P,mat,label,mass,nParam){
     const fi=curve.findIndex(p=>p.x>=d.H);
     const ii=fi<0?curve.length-1:Math.max(0,fi-1);
     const dmdh=slopeAt(curve,ii);
-    const sig=sigmaMIR(isFinite(dmdh)?dmdh:0,m,P);
+    const sig=sigmaMIR(isFinite(dmdh)?dmdh:0,m,P,'read');
     const r=d.mir-m; s2+=(r/sig)*(r/sig); n++;
   });
   if(!n) return NaN;

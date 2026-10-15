@@ -1,0 +1,1532 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[a4paper,margin=25mm]{geometry}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{hyperref}
+\usepackage{booktabs}
+
+\title{Penurunan Persamaan Simulator Magnetoimpedansi Teoretis\\dengan Sensing Nanopartikel\\{\normalsize Penjelasan verbose langkah-demi-langkah (versi revisi)}}
+\author{Disusun dari \texttt{simulator-magnetoimpedansi-teoretis-revisi.html}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Dokumen ini menulis ulang seluruh teori yang dipakai simulator dengan bahasa
+yang dibuat semudah mungkin untuk konfirmasi ulang.
+Penomoran dibuat otomatis oleh LaTeX (lingkungan \texttt{equation} plus
+\texttt{subequations} untuk kelompok berhuruf), sehingga urutannya
+mengikuti panel teori pada simulator (23 nomor utama),
+ditambah semua ekstensi empiris pada kode:
+koreksi tepi, dinding domain, sebaran koersif, sebaran anisotropi,
+sebaran diameter, konduktivitas partikel, cakupan lapisan,
+lapisan dua sisi, skin kabel, kalibrasi kumparan, derau,
+pita model satu sigma, dan batas deteksi.
+Semua hubungan matematis ditulis pada baris khusus
+(display equation), tidak ada persamaan yang disembunyikan
+di dalam paragraf.
+Konvensi yang dipakai adalah konvensi fasor waktu maju,
+satuan SI, dan medan bias dinyatakan sebagai rapat fluks
+dalam tesla (mili-tesla pada tampilan).
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%=====================================================================
+\section{Cara membaca dokumen ini}
+%=====================================================================
+Paragraf teks hanya berisi cerita dan alasan fisis.
+Setiap kali ada hubungan antar besaran, hubungan itu
+ditulis pada baris tersendiri di bawah paragrafnya.
+Jadi pembaca dapat memeriksa satu persamaan dalam satu waktu,
+mencocokkannya dengan satu fungsi pada kode,
+lalu lanjut ke langkah berikutnya.
+
+Pemetaan kasar fungsi pada kode:
+fungsi permeabilitas adalah \texttt{chiLayer},
+fungsi impedansi trilayer adalah \texttt{zOne},
+rata-rata histeresis adalah \texttt{zSensor},
+rata-rata sebaran anisotropi adalah \texttt{zSensorAvg},
+respons partikel adalah \texttt{particleResp} dan \texttt{particleAvg},
+geometri lapisan adalah \texttt{layerGeom},
+impedansi total adalah \texttt{totalZ},
+sapuan dan derau adalah \texttt{setpoints}, \texttt{measure},
+\texttt{modelCurve}, \texttt{peakAt}, \texttt{sigmaMIR},
+\texttt{modelBand}, dan \texttt{modelMIR}.
+
+Rujukan silang memakai mekanisme standar LaTeX.
+Setiap persamaan bernomor memiliki \texttt{\textbackslash label\{eq:...\}},
+misalnya Helmholtz \texttt{eq:1}, difusi \texttt{eq:3a},
+MIR \texttt{eq:2}, dan batas deteksi \texttt{eq:23b}.
+Untuk merujuk, pakai \texttt{\textbackslash eqref\{eq:1\}} yang menghasilkan
+\eqref{eq:1}, atau \texttt{\textbackslash ref\{eq:3a\}} sesuai kebutuhan.
+Kelompok berhuruf memakai lingkungan \texttt{subequations} dengan label
+grup (\texttt{eq:3}, \texttt{eq:4}, dan seterusnya), sehingga penomoran
+huruf dibuat otomatis dan tidak perlu \texttt{\textbackslash tag}
+manual.
+
+%=====================================================================
+\section{Catatan revisi dan status tiap bagian}
+%=====================================================================
+Versi ini memperbaiki kesalahan yang ditemukan pada tinjauan sebelumnya,
+baik pada dokumen maupun pada kode simulator.
+Kolom kedua menunjukkan di mana perbaikan dilakukan.
+\begin{center}
+\small
+\begin{tabular}{p{0.30\textwidth}p{0.12\textwidth}p{0.48\textwidth}}
+\toprule
+Butir & Lokasi & Perubahan\\
+\midrule
+Rugi eddy bola logam & kode dan dokumen & Faktor dua diperbaiki;
+bentuk akhir pada sub-bab rugi eddy.\\
+Dimensi magnetisasi para/dia & dokumen & Definisi dibetulkan
+(lihat sub-bab para/dia); kode sudah benar.\\
+Demagnetisasi film sangat tipis & dokumen & Dibetulkan
+(lihat sub-bab demagnetisasi); kode sudah benar.\\
+Nilai faktor amplitudo acak & dokumen & Dibetulkan
+(lihat sub-bab faktor amplitudo).\\
+Simpul Gauss--Hermite & dokumen & Simpul fisikawan \emph{dikali} $\sqrt{2}$.\\
+Tanda $H_{y}$ & dokumen & Tanda minus Faraday dipertahankan.\\
+Penomoran persamaan & dokumen & Persamaan bagian notasi tidak lagi bernomor.\\
+Notasi bertabrakan & dokumen & $\mathcal{A},\mathcal{B}$, $\Delta_{c}$,
+$m_{p}$, $\varpi$ dibedakan dari simbol lain; $\alpha_{p}$ didefinisikan.\\
+Parser CSV & kode & Fallback yang salah ke kolom $I_{\mathrm{aktual}}$ dihapus.\\
+Suseptibilitas partikel & kode dan dokumen & Terblokir memakai
+$\chi_{\perp,b}$ transversal, konsisten dengan superparamagnetik.\\
+Sebaran diameter & kode dan dokumen & Rata-rata berbobot volume ($d^{3}$).\\
+Koreksi tepi & kode dan dokumen & Bentuk aditif $\pm N_{w}\mu_{0}M_{s}$,
+hanya tebal lapisan magnetik.\\
+Dinding domain & kode dan dokumen & Bentuk Debye kausal (real dan imajiner).\\
+Acuan MIR & kode dan dokumen & Diambil pada medan \emph{aktual} di ujung sapuan.\\
+Sensitivitas LOD & kode dan dokumen & Langkah $dm$ adaptif pada rezim linear.\\
+Klaim ``sudah diuji'' & kode dan dokumen & Ada fungsi uji mandiri; hasil
+pada Lampiran~\ref{app:uji}.\\
+\bottomrule
+\end{tabular}
+\end{center}
+Beberapa kelemahan fisis bersifat struktural dan \emph{tidak} diubah,
+tetapi sekarang ditandai terang-terangan (Lampiran~\ref{app:empiris}):
+medan sebar seragam, sebaran dipolar Gaussian, remanen model tanh,
+derau acuan common-mode, rata-rata naik-turun pada data campuran arah,
+dan seluruh parameter heuristik.
+
+%=====================================================================
+\section{Alur perhitungan ujung-ke-ujung dan peta hubungan rumus}
+%=====================================================================
+Bagian ini adalah benang merah dokumen.
+Tujuannya agar pembaca selalu tahu posisi setiap rumus:
+datang dari mana, dipakai untuk apa, dan mengalir ke mana.
+Bagian-bagian sesudahnya adalah penurunan rinci tiap kotak pada alur ini.
+
+\subsection{Gambaran satu kalimat}
+Pengguna meminta medan.
+Kumparan mengubah permintaan menjadi medan aktual.
+Massa partikel mengubah medan itu menjadi tiga efek.
+Sensor mengubah medan efektif menjadi impedansi.
+Semua kontribusi dijumlahkan menjadi impedansi total,
+lalu dinormalisasi terhadap ujung sapuan menjadi persen MIR,
+lalu dibandingkan dengan data berderau melalui pita satu sigma.
+
+\subsection{Diagram pipa sepuluh tahap}
+Tahap nol menyiapkan parameter.
+Semua geseran dan angka bahan dibaca dari panel dan dikemas menjadi
+struktur parameter sensor dan struktur bahan partikel.
+Tidak ada fisika pada tahap ini, hanya penyiapan.
+
+Tahap satu mengubah keinginan menjadi kenyataan medan.
+Masukan tahap ini adalah medan yang diinginkan.
+Keluaran tahap ini adalah tiga medan: perintah, aktual, dan terbaca.
+Arus perintah diperoleh sebagai berikut.
+\begin{equation*}
+I_{\mathrm{cmd}} = H_{\mathrm{set}}/k_{\mathrm{cmd}}
+\end{equation*}
+Medan aktual diperoleh sebagai berikut.
+\begin{equation*}
+H_{\mathrm{act}} = H_{\mathrm{set}}\,(k_{\mathrm{true}}/k_{\mathrm{cmd}})
++ B_{\mathrm{off}} + \delta H
+\end{equation*}
+Medan terbaca diperoleh sebagai berikut.
+\begin{equation*}
+H_{\mathrm{read}} = H_{\mathrm{act}} + \delta H_{r}
+\end{equation*}
+Hanya medan aktual yang masuk ke fisika.
+Dua lainnya hanya untuk sumbu plot, arus, dan berkas CSV.
+Rujukan rinci ada pada \eqref{eq:1}.
+
+Tahap dua mengubah massa menjadi geometri lapisan.
+Masukan tahap ini adalah massa, massa jenis, fraksi volume, luas sebaran,
+dan lebar strip.
+Keluaran tahap ini adalah tebal, tebal efektif, dan faktor demagnetisasi.
+Tebal mengikuti definisi massa dibagi volume sebagai berikut
+(lihat \eqref{eq:17a}).
+\begin{equation*}
+t_{p} \Leftarrow m/(\rho\,\varphi\,A_{c})
+\end{equation*}
+Tebal efektif jenuh pada skala lebar sebagai berikut
+(lihat \eqref{eq:17b}, \eqref{eq:17c}).
+\begin{equation*}
+t_{\mathrm{eff}} \Leftarrow \lambda\,(1-e^{-t_{p}/\lambda})
+\end{equation*}
+Faktor demagnetisasi mengikuti geometri pipih sebagai berikut.
+\begin{equation*}
+N_{\mathrm{in}} \Leftarrow (1-N_{z})/2
+\end{equation*}
+Panah kiri dibaca ``dihitung dari''.
+Fungsi kode tahap ini adalah \texttt{layerGeom} dan \texttt{Nin}.
+
+Tahap tiga mengubah medan menjadi respons partikel.
+Masukan tahap ini adalah medan dalam tesla, arah sapuan, bahan, frekuensi,
+dan suhu.
+Keluaran tahap ini adalah magnetisasi partikel, faktor amplitudo momen,
+dan suseptibilitas kompleks.
+Untuk superparamagnetik, rantainya adalah sebagai berikut
+(lihat \eqref{eq:12a}--\eqref{eq:14b}).
+\begin{equation*}
+B \Rightarrow \xi \Rightarrow L \Rightarrow M \Rightarrow \chi_{\perp}
+\Rightarrow \chi(\omega)
+\end{equation*}
+Untuk terblokir, rantainya adalah sebagai berikut
+(lihat \eqref{eq:15a}--\eqref{eq:16c}).
+\begin{equation*}
+B \Rightarrow a \Rightarrow M,\qquad
+B \Rightarrow \chi_{\perp,b} \Rightarrow \chi(\omega)
+\end{equation*}
+Panah kanan dibaca ``menghasilkan''.
+Rugi eddy logam ditambahkan ke bagian imajiner bila konduktivitas positif.
+Sebaran diameter merata-ratakan ketiga keluaran di atas
+dengan kuadratur yang menjaga rata-rata.
+Fungsi kode tahap ini adalah \texttt{particleResp} dan \texttt{particleAvg}.
+
+Tahap empat mengubah medan efektif menjadi impedansi sensor telanjang.
+Masukan tahap ini adalah medan efektif, arah sapuan, parameter sensor,
+dan frekuensi.
+Keluaran tahap ini adalah impedansi sensor sebelum lapisan partikel.
+Rantainya adalah sebagai berikut
+(lihat \eqref{eq:9}--\eqref{eq:11} lalu \eqref{eq:3a}--\eqref{eq:6b}).
+\begin{equation*}
+H \Rightarrow (A,B) \Rightarrow \chi \Rightarrow \mu
+\Rightarrow (k_{c},k_{f}) \Rightarrow (\mathcal{A},\mathcal{B})_{\mathrm{sambung}}
+\Rightarrow (E_{s},H_{s}) \Rightarrow Z
+\end{equation*}
+Dua averaging membungkus rantai ini.
+Yang pertama meratakan dua cabang magnetisasi untuk histeresis koersif.
+Yang kedua meratakan sebaran anisotropi film.
+Fungsi kode tahap ini adalah \texttt{chiLayer}, \texttt{zOne},
+\texttt{zSensor}, dan \texttt{zSensorAvg}.
+
+Tahap lima menghitung tiga efek partikel dari keluaran tahap dua dan tiga.
+Efek dinamis memakai medium efektif sebagai berikut
+(lihat \eqref{eq:18a}--\eqref{eq:19}).
+\begin{equation*}
+(\varphi,\chi) \Rightarrow \mu_{L} \Rightarrow \Delta Z_{p}
+\end{equation*}
+Efek rata-rata memakai demagnetisasi sebagai berikut
+(lihat \eqref{eq:20}).
+\begin{equation*}
+(N_{\mathrm{in}},\varphi,M_{p}) \Rightarrow B_{s}
+\end{equation*}
+Efek sebaran memakai lebar dipolar sebagai berikut
+(lihat \eqref{eq:21a}--\eqref{eq:21b}).
+\begin{equation*}
+(C_{d},\varphi,M_{s},s) \Rightarrow \sigma_{s} \Rightarrow \bar Z
+\end{equation*}
+Cakupan pulau mengecilkan ketiganya, lapisan dua sisi menggandakan
+suku dinamis saja.
+
+Tahap enam menjumlahkan semuanya menjadi impedansi total
+(lihat \eqref{eq:22}).
+\begin{equation*}
+Z_{\mathrm{tot}} = \bar Z + \Delta Z_{p} + R_{c} + j\,\omega\,L_{p}
+\end{equation*}
+Resistansi kabel memakai bentuk akar frekuensi sebagai berikut.
+\begin{equation*}
+R_{c}(f) = R_{c0} + R_{c,\mathrm{skin}}\,\sqrt{f_{\mathrm{MHz}}}
+\end{equation*}
+Modulus diambil sebagai berikut.
+\begin{equation*}
+|Z| = \sqrt{(\mathrm{Re}\,Z)^{2}+(\mathrm{Im}\,Z)^{2}}
+\end{equation*}
+Fungsi kode tahap ini adalah \texttt{totalZ}.
+
+Tahap tujuh menormalisasi menjadi persen MIR
+(lihat \eqref{eq:2}).
+Acuan tiap massa diambil di ujung naik sebagai berikut.
+\begin{equation*}
+Z_{\mathrm{ref}} = |Z(H_{\max}^{\mathrm{akt}},\mathrm{naik})|
+\end{equation*}
+Kurva model diperoleh sebagai berikut.
+\begin{equation*}
+y(H) = 100\,(|Z(H)|-Z_{\mathrm{ref}})/Z_{\mathrm{ref}}
+\end{equation*}
+
+Tahap delapan menambahkan derau pengukuran.
+Acuan ikut berderau, tiap titik ikut berderau medan dan modulus,
+bacaan probe ikut berderau sumbu.
+Bentuknya ada pada bab sapuan, intinya adalah sebagai berikut:
+derau medan masuk fisika, derau baca hanya menggeser titik.
+Fungsi kode tahap ini adalah \texttt{measure}.
+
+Tahap sembilan menilai hasil.
+Puncak, sensitivitas awal, dan batas deteksi mengikuti
+\eqref{eq:23a}--\eqref{eq:23b}.
+Pita model, residu, dan biaya fit memakai satu definisi sigma yang sama,
+yaitu gabungan turunan kurva kali derau medan plus derau impedansi.
+Fungsi kode tahap ini adalah \texttt{peakAt}, \texttt{sigmaMIR},
+\texttt{slopeAt}, \texttt{modelBand}, \texttt{modelMIR},
+dan \texttt{nelderMead}.
+
+\subsection{Peta hubungan: tiga aliran bertemu di satu titik}
+Ada tiga aliran yang akhirnya bertemu.
+Aliran sensor membawa permeabilitas ke impedansi.
+Isinya adalah \eqref{eq:8}--\eqref{eq:11} yang mengalir ke
+\eqref{eq:3a}--\eqref{eq:6b}.
+Aliran partikel membawa magnetisasi ke suseptibilitas.
+Isinya adalah \eqref{eq:12a}--\eqref{eq:16c} plus eddy dan lognormal.
+Aliran geometri membawa massa ke tebal dan demagnetisasi.
+Isinya adalah \eqref{eq:17a}--\eqref{eq:17c} plus faktor spheroid.
+Ketiga aliran bertemu pada impedansi total \eqref{eq:22}:
+aliran sensor memberi $\bar Z$,
+aliran partikel plus geometri memberi $\Delta Z_{p}$, $B_{s}$, $\sigma_{s}$,
+lalu $B_{s}$ dan $\sigma_{s}$ dibalikkan lagi ke aliran sensor
+sebagai medan efektif.
+Inilah alasan mengapa urutan hitung pada kode adalah:
+geometri dulu, partikel dulu, baru sensor dirata-rata,
+baru dijumlahkan.
+
+\subsection{Jejak satu titik dari awal sampai persen}
+Bagian ini menelusuri satu titik sapuan dari permintaan sampai persen,
+agar hubungan antar rumus terlihat sebagai satu cerita.
+Angka tidak ditulis karena yang penting adalah urutannya.
+
+Pertama, permintaan diubah menjadi arus perintah.
+\begin{equation*}
+\text{permintaan} \Rightarrow \text{arus perintah}
+\end{equation*}
+Kedua, arus perintah diubah menjadi medan aktual lewat kalibrasi.
+\begin{equation*}
+\text{arus perintah} \Rightarrow \text{medan aktual}
+\end{equation*}
+Ketiga, medan aktual diubah menjadi bacaan probe.
+\begin{equation*}
+\text{medan aktual} \Rightarrow \text{medan terbaca}
+\end{equation*}
+Keempat, massa diubah menjadi geometri lapisan.
+\begin{equation*}
+\text{massa} \Rightarrow \text{tebal} \Rightarrow \text{tebal efektif}
+\Rightarrow \text{demagnetisasi}
+\end{equation*}
+Kelima, medan aktual diubah menjadi respons partikel.
+\begin{equation*}
+\text{medan aktual} \Rightarrow \text{magnetisasi}
+\Rightarrow \text{suseptibilitas}
+\end{equation*}
+Keenam, respons dan geometri diubah menjadi tiga efek.
+\begin{equation*}
+\text{respons + geometri} \Rightarrow
+(\Delta Z_{p},\,B_{s},\,\sigma_{s})
+\end{equation*}
+Ketujuh, medan aktual dikoreksi menjadi medan efektif sensor.
+\begin{equation*}
+\text{medan aktual + sebaran rata-rata} \Rightarrow \text{medan efektif}
+\end{equation*}
+Kedelapan, medan efektif plus sebaran dipolar diubah menjadi
+impedansi sensor rata-rata.
+\begin{equation*}
+\text{medan efektif + sebaran} \Rightarrow \bar Z
+\end{equation*}
+Kesembilan, semua suku dijumlahkan dan diambil modulusnya.
+\begin{equation*}
+\text{jumlah suku} \Rightarrow |Z|
+\end{equation*}
+Kesepuluh, modulus dinormalisasi terhadap ujung menjadi persen.
+\begin{equation*}
+\text{modulus + acuan ujung} \Rightarrow \text{persen MIR}
+\end{equation*}
+Kesebelas, persen model dibandingkan dengan persen terukur berderau
+melalui pita, residu, dan khi-kuadrat.
+\begin{equation*}
+\text{model + data} \Rightarrow \text{pita, residu, kecocokan}
+\end{equation*}
+
+\subsection{Tabel ringkas fungsi lawan persamaan}
+Tabel ini dipakai sebagai indeks cepat saat membaca kode berdampingan
+dengan dokumen.
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Fungsi kode & Persamaan & Peran dalam alur\\
+\midrule
+\texttt{chiLayer} & \eqref{eq:8}--\eqref{eq:11} & Medan menjadi permeabilitas\\
+\texttt{zOne} & \eqref{eq:3a}--\eqref{eq:6b} & Permeabilitas menjadi impedansi\\
+\texttt{zSensor} & campuran dua cabang & Histeresis koersif\\
+\texttt{zSensorAvg} & rata-rata tujuh titik & Sebaran anisotropi\\
+\texttt{particleResp} & \eqref{eq:12a}--\eqref{eq:16c} & Medan menjadi respons partikel\\
+\texttt{particleAvg} & rata-rata tujuh titik & Sebaran diameter\\
+\texttt{layerGeom}, \texttt{Nin} & \eqref{eq:17a}--\eqref{eq:17c} & Massa menjadi geometri\\
+\texttt{totalZ} & \eqref{eq:18a}--\eqref{eq:22} & Pertemuan tiga aliran\\
+\texttt{measure} & rantai kalibrasi + derau & Model menjadi data terukur\\
+\texttt{sigmaMIR}, \texttt{modelBand} & \eqref{eq:23a} & Data menjadi pita\\
+\texttt{peakAt}, LOD & \eqref{eq:23a}--\eqref{eq:23b} & Kurva menjadi batas deteksi\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%=====================================================================
+\section{Notasi, satuan, dan konstanta}
+%=====================================================================
+Bagian ini mendefinisikan semua simbol agar tidak ada ambiguitas
+antara milimeter, mikrometer, mega-hertz, dan tesla.
+
+Permeabilitas vakum didefinisikan sebagai berikut.
+\begin{equation*}
+\mu_{0} = 4\pi\times 10^{-7}\ \mathrm{H/m}
+\end{equation*}
+Konstanta Boltzmann didefinisikan sebagai berikut.
+\begin{equation*}
+k_{B} = 1.380649\times 10^{-23}\ \mathrm{J/K}
+\end{equation*}
+Rasio giromagnetik didefinisikan sebagai berikut.
+\begin{equation*}
+\gamma = 1.76085963\times 10^{11}\ \mathrm{rad/(s\,T)}
+\end{equation*}
+Frekuensi sudut didefinisikan dari frekuensi biasa sebagai berikut.
+\begin{equation*}
+\omega = 2\pi f
+\end{equation*}
+Frekuensi yang dinormalisasi terhadap giromagnetik adalah sebagai berikut.
+\begin{equation*}
+\omega_{\gamma} = \omega / \gamma
+\end{equation*}
+
+Geometri strip dijelaskan sebagai berikut.
+Panjang strip sepanjang arus adalah $l$.
+Lebar strip adalah $w$.
+Tebal tiap lapis magnetik adalah $t_{f}$.
+Tebal total inti tembaga adalah $t_{\mathrm{cu}}$.
+Setengah tebal inti tembaga adalah $d_{c}$.
+Hubungan tebal inti adalah sebagai berikut.
+\begin{equation*}
+t_{\mathrm{cu}} = 2d_{c}
+\end{equation*}
+
+Besaran magnetik dijelaskan sebagai berikut.
+Simbol $M_{s}$ adalah magnetisasi jenuh.
+Simbol $H_{k}$ adalah medan anisotropi.
+Simbol $H_{c}$ adalah medan koersif sensor.
+Simbol $\alpha$ adalah redaman Gilbert.
+Simbol $\Delta H_{0}$ adalah pelebaran garis inhomogen.
+Simbol $\sigma_{f}$ adalah konduktivitas lapis magnetik.
+Simbol $\sigma_{c}$ adalah konduktivitas tembaga (huruf kecil, sama dengan persamaan di bawah).
+Pada tampilan, konduktivitas dalam MS/m sehingga berlaku konversi berikut.
+\begin{equation*}
+\sigma[\mathrm{S/m}] = \sigma[\mathrm{MS/m}]\times 10^{6}
+\end{equation*}
+Tebal film dalam mikrometer sehingga berlaku konversi berikut.
+\begin{equation*}
+t[\mathrm{m}] = t[\mu\mathrm{m}]\times 10^{-6}
+\end{equation*}
+Panjang dan lebar dalam milimeter sehingga berlaku konversi berikut.
+\begin{equation*}
+l[\mathrm{m}] = l[\mathrm{mm}]\times 10^{-3}
+\end{equation*}
+\begin{equation*}
+w[\mathrm{m}] = w[\mathrm{mm}]\times 10^{-3}
+\end{equation*}
+Medan pada kode dalam mili-tesla sehingga berlaku konversi berikut.
+\begin{equation*}
+H[\mathrm{T}] = H[\mathrm{mT}]\times 10^{-3}
+\end{equation*}
+Catatan: besaran yang disebut ``medan'' $H$ pada dokumen dan kode sebenarnya
+rapat fluks $\mu_{0}H$ dalam tesla. Karena itu $H_{k}$, $H_{c}$, dan
+$\mu_{0}M_{s}$ semuanya memiliki satuan yang sama dan dapat dijumlahkan
+langsung.
+
+%=====================================================================
+\section{Medan kumparan Helmholtz dan definisi MIR}
+%=====================================================================
+\subsection{Medan di pusat kumparan}
+Dua kumparan lingkaran identik dengan jari-jari $R$,
+diletakkan sejajar pada jarak $R$,
+masing-masing dengan $N$ lilitan dan dialiri arus $I$ yang sama.
+Dari hukum Biot--Savart, medan aksial satu loop pada jarak $z$ adalah
+sebagai berikut.
+\begin{equation*}
+B_{\mathrm{loop}}(z) = \frac{\mu_{0}NI R^{2}}{2\left(R^{2}+z^{2}\right)^{3/2}}
+\end{equation*}
+Pusat Helmholtz berada di tengah, yaitu pada jarak setengah jari-jari
+dari tiap loop, yang ditulis sebagai berikut.
+\begin{equation*}
+z = R/2
+\end{equation*}
+Menjumlahkan dua loop memberi faktor geometri sebagai berikut.
+\begin{equation*}
+B = 2\times \frac{\mu_{0}NI R^{2}}{2\left(R^{2}+R^{2}/4\right)^{3/2}}
+\end{equation*}
+Penyederhanaan faktor geometri memberi bentuk yang dipakai simulator.
+\begin{equation}
+B = \left(\frac{4}{5}\right)^{3/2}\frac{\mu_{0}NI}{R}
+\label{eq:1}
+\end{equation}
+Nilai numerik faktor geometri adalah sebagai berikut.
+\begin{equation*}
+\left(\frac{4}{5}\right)^{3/2} \approx 0.7155
+\end{equation*}
+Sehingga bentuk praktisnya adalah sebagai berikut.
+\begin{equation*}
+B \approx 0.7155\,\frac{\mu_{0}NI}{R}
+\end{equation*}
+Kode menghitung konstanta teori dalam mT/A sebagai berikut.
+\begin{equation*}
+k_{\mathrm{teori}} = 0.7155\,\mu_{0}\,N/(R/100)\times 1000
+\end{equation*}
+Alasan dibagi 100 adalah karena $R$ pada tampilan dalam cm,
+sedangkan rumus SI meminta meter.
+
+\subsection{Rantai kalibrasi: keinginan, kenyataan, bacaan}
+Simulator membedakan tiga medan agar kalibrasi dapat diuji.
+Pertama, medan yang diinginkan oleh pengguna.
+\begin{equation*}
+H_{\mathrm{set}} = h
+\end{equation*}
+Kedua, arus perintah yang dikirim ke catu daya.
+\begin{equation*}
+I_{\mathrm{cmd}} = H_{\mathrm{set}}/k_{\mathrm{cmd}}
+\end{equation*}
+Ketiga, medan aktual yang benar-benar dirasakan sensor.
+\begin{equation*}
+H_{\mathrm{act}} = H_{\mathrm{set}}\,(k_{\mathrm{true}}/k_{\mathrm{cmd}})
++ B_{\mathrm{off}} + \delta H
+\end{equation*}
+Di sini $k_{\mathrm{cmd}}$ adalah konstanta yang diyakini alat,
+$k_{\mathrm{true}}$ adalah konstanta sebenarnya,
+$B_{\mathrm{off}}$ adalah offset Bumi plus remanen,
+dan $\delta H$ adalah fluktuasi acak medan.
+Keempat, medan terbaca oleh Hall probe.
+\begin{equation*}
+H_{\mathrm{read}} = H_{\mathrm{act}} + \delta H_{r}
+\end{equation*}
+Derau $\delta H_{r}$ hanya menggeser titik pada sumbu X,
+tidak masuk ke fisika impedansi.
+Fisika $Z$ selalu memakai $H_{\mathrm{act}}$.
+Sumbu plot memakai $H_{\mathrm{set}}$ atau $H_{\mathrm{read}}$
+sesuai saklar tampilan.
+Arus aktual yang konsisten dengan medan aktual adalah sebagai berikut.
+\begin{equation*}
+I_{\mathrm{act}} = (H_{\mathrm{act}}-B_{\mathrm{off}})/k_{\mathrm{true}}
+\end{equation*}
+Bila konstanta nol, kode menjaga agar arus menjadi tak-hingga yang jelas
+(Not-a-Number) daripada diam-diam salah.
+
+\subsection{Definisi MIR}
+Rasio magnetoimpedansi didefinisikan terhadap modulus di ujung sapuan.
+\begin{equation}
+\mathrm{MIR}(H) = 100\,\frac{|Z(H)|-|Z(H_{\max})|}{|Z(H_{\max})|}
+\label{eq:2}
+\end{equation}
+Satuan MIR adalah persen.
+Yang dimaksud $H_{\max}$ pada definisi ini adalah medan \emph{aktual}
+di ujung sapuan, bukan medan yang diminta.
+\begin{equation*}
+H_{\max}^{\mathrm{akt}} = H_{\max}\,k_{\mathrm{true}}/k_{\mathrm{cmd}}
++ B_{\mathrm{off}}
+\end{equation*}
+Bila kalibrasi default (tanpa selisih konstanta dan tanpa offset),
+medan aktual ujung identik dengan medan nominal.
+Alasan memakai ujung sapuan adalah agar definisi tidak memerlukan
+ekstrapolasi ke tak-hingga.
+Konsekuensinya, bila kurva belum jenuh di $H_{\max}$,
+penyebut bias dan puncak ikut bias.
+Kode memberi peringatan bila dua titik terakhir masih berubah lebih dari
+ambang setengah poin atau dua persen relatif.
+
+%=====================================================================
+\section{Impedansi trilayer dari persamaan Maxwell}
+%=====================================================================
+\subsection{Dari Maxwell ke persamaan difusi}
+Arus mengalir sepanjang $x$, semua besaran hanya berubah sepanjang $z$
+karena lebar jauh lebih besar daripada tebal.
+Hukum Faraday dan Ampere tanpa arus perpindahan adalah sebagai berikut.
+\begin{equation*}
+\nabla\times \mathbf{E} = -j\omega \mathbf{B}
+\end{equation*}
+\begin{equation*}
+\nabla\times \mathbf{H} = \sigma \mathbf{E}
+\end{equation*}
+Hubungan konstitutif magnetik adalah sebagai berikut.
+\begin{equation*}
+\mathbf{B} = \mu_{0}\,\mu\,\mathbf{H}
+\end{equation*}
+Eliminasi $\mathbf{H}$ memberi persamaan difusi untuk komponen $E_{x}$.
+\begin{subequations}\label{eq:3}
+\begin{equation}
+\frac{d^{2}E_{x}}{dz^{2}} = k^{2}E_{x}
+\label{eq:3a}
+\end{equation}
+Bilangan gelombang kompleks didefinisikan sebagai berikut.
+\begin{equation}
+k = \sqrt{j\omega\mu_{0}\mu\sigma}
+\label{eq:3b}
+\end{equation}
+Bentuk skin-depth diperoleh dengan menulis akar dari satuan imajiner.
+\begin{equation}
+k = \frac{1+j}{\delta}
+\label{eq:3c}
+\end{equation}
+Skin-depth didefinisikan sebagai berikut.
+\begin{equation}
+\delta = \sqrt{\frac{2}{\omega\mu_{0}\mu\sigma}}
+\label{eq:3d}
+\end{equation}
+\end{subequations}
+Makin besar frekuensi, konduktivitas, atau permeabilitas,
+makin kecil skin-depth dan arus makin menumpuk di permukaan.
+
+\subsection{Solusi simetris pada inti dan lapis magnetik}
+Struktur simetris terhadap tengah.
+Pada inti tembaga, solusi genap yang memenuhi simetri adalah kosinus
+hiperbolik sebagai berikut.
+\begin{subequations}\label{eq:4}
+\begin{equation}
+E_{c}(z) = \cosh(k_{c}z)
+\label{eq:4a}
+\end{equation}
+Pada lapis magnetik, dipakai koordinat lokal dari antarmuka sebagai berikut.
+\begin{equation*}
+u = z-d_{c}
+\end{equation*}
+Solusi umum kombinasi kosinus dan sinus hiperbolik adalah sebagai berikut.
+\begin{equation}
+E_{f}(u) = \mathcal{A}\cosh(k_{f}u)+\mathcal{B}\sinh(k_{f}u)
+\label{eq:4b}
+\end{equation}
+\end{subequations}
+Bilangan gelombang tiap bahan adalah sebagai berikut.
+\begin{equation*}
+k_{c} = \sqrt{j\omega\mu_{0}\sigma_{c}}
+\end{equation*}
+\begin{equation*}
+k_{f} = \sqrt{j\omega\mu_{0}\sigma_{f}\,\mu}
+\end{equation*}
+Permeabilitas kompleks adalah sebagai berikut.
+\begin{equation*}
+\mu = 1+\chi
+\end{equation*}
+
+\subsection{Koefisien sambung dari syarat batas}
+Medan magnetik transversal diperoleh dari hukum Faraday, termasuk
+tanda minusnya.
+\begin{equation*}
+H_{y} = -\frac{1}{j\omega\mu_{0}\mu}\frac{dE_{x}}{dz}
+\end{equation*}
+Tanda minus itu fisis: untuk arus pada arah $+x$, medan $H_{y}$ di muka atas
+($z>0$) bernilai negatif (kaidah tangan kanan). Karena itu besaran yang
+dipakai pada hukum Ampere adalah komponen yang positif untuk arus positif.
+\begin{equation*}
+H_{s} \equiv -H_{y}\big|_{\mathrm{muka\ atas}}
+= \frac{1}{j\omega\mu_{0}\mu}\frac{dE_{x}}{dz}\bigg|_{\mathrm{muka\ atas}}
+\end{equation*}
+Syarat kontinuitas $H_{y}$ di antarmuka tidak terpengaruh tanda ini karena
+kedua sisi memuat faktor $-1$ yang sama.
+Kontinuitas komponen listrik di antarmuka menuntut nilai yang sama.
+Posisi antarmuka pada koordinat lokal adalah sebagai berikut.
+\begin{equation*}
+u = 0
+\end{equation*}
+\begin{equation*}
+E_{f}(0) = E_{c}(d_{c})
+\end{equation*}
+Kontinuitas $H_{y}$ menuntut turunan terbobot yang sama.
+\begin{equation*}
+\left.\frac{1}{\mu}\frac{dE_{f}}{du}\right|_{0}
+=
+\left.\frac{dE_{c}}{dz}\right|_{d_{c}}
+\end{equation*}
+Normalisasi pusat dipilih sebagai berikut.
+\begin{equation*}
+E_{c}(0) = 1
+\end{equation*}
+Penyelesaian sistem dua persamaan itu adalah sebagai berikut.
+Catatan notasi: $\mathcal{A},\mathcal{B}$ (huruf kaligrafi) adalah koefisien
+medan listrik, sedangkan $A,B$ pada bab permeabilitas adalah kekakuan magnetik.
+\begin{subequations}\label{eq:5}
+\begin{equation}
+\mathcal{A} = \cosh(k_{c}d_{c})
+\label{eq:5a}
+\end{equation}
+\begin{equation}
+\mathcal{B} = \frac{\mu\,k_{c}\,\sinh(k_{c}d_{c})}{k_{f}}
+\label{eq:5b}
+\end{equation}
+\end{subequations}
+Inilah fungsi \texttt{zOne} pada kode: hitung $\chi$, lalu $\mu$,
+lalu $k_{c}$ dan $k_{f}$ kompleks, lalu $\mathcal{A}$ dan $\mathcal{B}$.
+
+\subsection{Dari medan permukaan ke impedansi strip}
+Medan di permukaan luar adalah nilai solusi pada tebal penuh.
+\begin{equation*}
+E_{s} = E_{f}(t_{f})
+\end{equation*}
+Medan magnetik di permukaan luar adalah sebagai berikut.
+\begin{subequations}\label{eq:6}
+\begin{equation}
+H_{s} = \frac{k_{f}}{j\omega\mu_{0}\mu}\,
+\bigl[\mathcal{A}\sinh(k_{f}t_{f})+\mathcal{B}\cosh(k_{f}t_{f})\bigr]
+\label{eq:6a}
+\end{equation}
+Hukum Ampere pada strip lebar, dengan $H_{s}$ di atas, memberi total arus sebagai berikut.
+\begin{equation*}
+I = 2\,w\,H_{s}
+\end{equation*}
+Tegangan sepanjang strip adalah sebagai berikut.
+\begin{equation*}
+V = E_{s}\,l
+\end{equation*}
+Impedansi adalah perbandingan keduanya sebagai berikut.
+\begin{equation}
+Z = \frac{l}{2w}\,\frac{E_{s}}{H_{s}}
+\label{eq:6b}
+\end{equation}
+\end{subequations}
+Faktor setengah muncul karena arus terbagi pada dua muka simetris.
+
+\subsection{Batas DC dan uji kewajaran}
+Pada frekuensi nol, bilangan gelombang nol dan impedansi harus menjadi
+resistansi DC paralel dua lapis magnetik plus inti.
+\begin{equation}
+R_{\mathrm{dc}} =
+\frac{l}{w\,(\sigma_{c}\,2d_{c}+2\sigma_{f}\,t_{f})}
+\label{eq:7}
+\end{equation}
+Untuk satu bahan homogen, rumus umum menyusut ke bentuk klasik berikut.
+\begin{equation*}
+Z = R_{\mathrm{dc}}\,k\,t\coth(k\,t)
+\end{equation*}
+Pada frekuensi rendah, bentuk itu menuju resistansi DC sebagai berikut.
+\begin{equation*}
+Z \to R_{\mathrm{dc}}\quad\text{untuk}\quad f\to 0
+\end{equation*}
+Kedua batas ini dipakai sebagai uji numerik kewajaran simulator.
+
+%=====================================================================
+\section{Permeabilitas dari LLG dan Smit--Beljers}
+%=====================================================================
+\subsection{Persamaan gerak magnetisasi}
+Vektor satuan magnetisasi $m$ berpresesi mengelilingi medan efektif
+dan perlahan teredam menuju medan itu.
+\begin{equation}
+\frac{d\mathbf{m}}{dt}
+= -\gamma\mu_{0}\,\mathbf{m}\times\mathbf{H}_{\mathrm{eff}}
++ \alpha\,\mathbf{m}\times\frac{d\mathbf{m}}{dt}
+\label{eq:8}
+\end{equation}
+Suku pertama adalah presesi tanpa rugi.
+Suku kedua adalah redaman Gilbert yang sebanding dengan $\alpha$.
+
+\subsection{Ide linearisasi: dua kekakuan}
+Gangguan kecil disekitar keseimbangan ditulis sebagai berikut.
+\begin{equation*}
+\mathbf{m} = \mathbf{m}_{0}+\delta\mathbf{m}\,e^{j\omega t}
+\end{equation*}
+Energi terhadap dua arah simpangan memberi dua kekakuan:
+$A$ untuk simpangan dalam bidang,
+$B$ untuk simpangan keluar bidang.
+Suseptibilitas besar bila salah satu kekakuan kecil,
+yaitu sistem lembek terhadap gangguan.
+
+\subsection{Kasus longitudinal}
+Sumbu mudah sejajar medan dan arus.
+Komponen medan sepanjang magnetisasi adalah sebagai berikut
+($s$ adalah cabang $+1$ atau $-1$).
+\begin{equation*}
+H_{p} = \max(s\,H,\,-0.95\,H_{k})
+\end{equation*}
+Batas bawah $-0.95H_{k}$ menjaga kekakuan tetap positif
+tepat sebelum pembalikan.
+Dua kekakuan longitudinal adalah sebagai berikut.
+\begin{equation*}
+A = H_{k}+H_{p}
+\end{equation*}
+\begin{equation*}
+B = H_{k}+H_{p}+\mu_{0}M_{s}
+\end{equation*}
+Pada medan nol, kekakuan sama dengan anisotropi sebagai berikut.
+\begin{equation*}
+A = H_{k}
+\end{equation*}
+Nilai itu kecil sehingga suseptibilitas besar.
+Inilah asal puncak tunggal runcing di nol.
+
+\subsection{Kasus transversal}
+Medan diambil nilai mutlaknya sebagai berikut.
+\begin{equation*}
+H = |H_{m}|
+\end{equation*}
+Bila medan di atas anisotropi, magnetisasi ikut medan.
+\begin{equation*}
+A = H-H_{k}\quad\text{untuk}\quad H\ge H_{k}
+\end{equation*}
+\begin{equation*}
+B = H+\mu_{0}M_{s}\quad\text{untuk}\quad H\ge H_{k}
+\end{equation*}
+Bila medan di bawah anisotropi, magnetisasi miring dengan sudut yang
+memenuhi kosinus berikut.
+\begin{equation*}
+\cos\phi = H/H_{k}
+\end{equation*}
+Kekakuan dalam bidang menjadi sebagai berikut.
+\begin{equation*}
+A = (H_{k}^{2}-H^{2})/H_{k}\quad\text{untuk}\quad H<H_{k}
+\end{equation*}
+Kekakuan luar bidang tetap sebagai berikut.
+\begin{equation*}
+B = H_{k}+\mu_{0}M_{s}\quad\text{untuk}\quad H<H_{k}
+\end{equation*}
+Hanya proyeksi sepanjang medan yang terukur sehingga muncul faktor reduksi.
+\begin{equation*}
+c_{2} = (H/H_{k})^{2}\quad\text{untuk}\quad H<H_{k}
+\end{equation*}
+\begin{equation*}
+c_{2} = 1\quad\text{untuk}\quad H\ge H_{k}
+\end{equation*}
+Kekakuan dalam bidang nol pada resonansi sebagai berikut.
+\begin{equation*}
+A = 0
+\end{equation*}
+Kondisi resonansi terjadi pada medan berikut.
+\begin{equation*}
+H = H_{k}
+\end{equation*}
+Sehingga muncul dua puncak pada plus-minus anisotropi.
+
+\subsection{Frekuensi resonansi, suseptibilitas, dan redaman}
+Frekuensi resonansi feromagnetik adalah sebagai berikut.
+\begin{equation}
+f_{r} = \frac{\gamma}{2\pi}\sqrt{AB}
+\label{eq:9}
+\end{equation}
+Suseptibilitas kompleks hasil linearisasi adalah sebagai berikut.
+\begin{subequations}\label{eq:10}
+\begin{equation}
+\chi = c_{2}\,\mu_{0}M_{s}\,
+\frac{B+j\Gamma}{(A+j\Gamma)(B+j\Gamma)-(\omega/\gamma)^{2}}
+\label{eq:10a}
+\end{equation}
+Permeabilitas relatif adalah sebagai berikut.
+\begin{equation}
+\mu = 1+\chi
+\label{eq:10b}
+\end{equation}
+\end{subequations}
+Lebar garis total terdiri dari redaman Gilbert plus sebaran inhomogen.
+\begin{equation}
+\Gamma = \alpha\,\omega/\gamma+\Delta H_{0}/2
+\label{eq:11}
+\end{equation}
+Jauh di bawah resonansi, penyebut didominasi $AB$ sehingga berlaku limit
+statis sebagai berikut.
+\begin{equation*}
+\chi \to \mu_{0}M_{s}/A
+\end{equation*}
+Khusus longitudinal, limitnya adalah sebagai berikut.
+\begin{equation*}
+\chi_{0} = \mu_{0}M_{s}/(H+H_{k})
+\end{equation*}
+
+\subsection{Koreksi tepi film berhingga}
+Penampang lintang lapisan magnetik berupa lempeng tipis setebal $t_{f}$
+dan selebar $w$. Pendekatan penampang elips memberi faktor demagnetisasi
+sepanjang lebar sebagai berikut.
+\begin{equation*}
+N_{w} = \frac{t_{f}}{t_{f}+w}
+\end{equation*}
+Anisotropi bentuk bersifat \emph{aditif} pada medan anisotropi.
+Untuk sumbu mudah longitudinal, demagnetisasi sepanjang lebar menaikkan
+kekakuan; untuk transversal, ia menurunkannya.
+\begin{equation*}
+H_{k,\mathrm{eff}} = H_{k} \pm \mathrm{edgeC}\,N_{w}\,\mu_{0}M_{s}
+\end{equation*}
+Tanda plus untuk longitudinal dan minus untuk transversal.
+Hanya tebal lapisan magnetik yang ikut; tembaga tidak.
+Nilai nol berarti mati (perilaku tanpa koreksi) dan nilai satu berarti
+koreksi penuh. Satuan: $t_{f}$ dalam mikrometer, $w$ dalam milimeter
+dikali seribu. Bentuk ini mengganti bentuk perkalian lama,
+yang tidak dapat dibenarkan secara fisis.
+
+\subsection{Dinding domain empiris frekuensi rendah}
+Gerak dinding domain menambah suseptibilitas real pada frekuensi rendah.
+\begin{equation*}
+\chi_{\mathrm{dw}}(f) =
+\frac{\mathrm{dwAmp}}{100}\,\frac{\mu_{0}M_{s}}{A_{\ast}}\,
+\frac{1}{1+j\,f/f_{\mathrm{dw}}},\qquad f_{\mathrm{dw}}=5\ \mathrm{MHz}
+\end{equation*}
+Ini bentuk Debye. Bagian real dan imajiner ditambahkan bersama:
+\begin{equation*}
+\Delta\chi' = \chi_{0}/(1+u^{2}),\qquad
+\Delta\chi'' = -\chi_{0}\,u/(1+u^{2}),\qquad u=f/f_{\mathrm{dw}}
+\end{equation*}
+Bentuk ini memenuhi relasi Kramers--Kronig. Versi sebelumnya hanya menambah
+bagian real, yang melanggar kausalitas. Frekuensi $5$ MHz adalah pilihan empiris.
+Penyebut diamankan agar tidak divergen sebagai berikut.
+\begin{equation*}
+A_{\ast} = \max(A,\,0.05\,H_{k},\,10^{-9})
+\end{equation*}
+Tanpa pengaman ini, titik nol berikut pada resonansi transversal
+akan menghasilkan nilai tak-hingga.
+\begin{equation*}
+A = 0
+\end{equation*}
+Nilai nol berarti mati.
+
+\subsection{Histeresis koersif sebagai campuran dua keadaan}
+Magnetisasi longitudinal berbalik di sekitar plus-minus $H_{c}$.
+Alih-alih loncatan tajam, dipakai fungsi alih mulus berupa
+fungsi distribusi kumulatif normal $\Phi$.
+Peluang keadaan plus pada sapuan naik adalah sebagai berikut.
+\begin{equation*}
+p_{\mathrm{up}} = \Phi\!\left(\frac{H-H_{c}}{\Delta_{c}}\right)
+\end{equation*}
+Peluang keadaan plus pada sapuan turun adalah sebagai berikut.
+\begin{equation*}
+p_{\mathrm{down}} = \Phi\!\left(\frac{H+H_{c}}{\Delta_{c}}\right)
+\end{equation*}
+Batas koersif dijaga di bawah anisotropi sebagai berikut.
+\begin{equation*}
+H_{c} = \min(H_{c},\,0.95\,H_{k})
+\end{equation*}
+Lebar alih $\Delta_{c}$ (bukan konduktivitas) terdiri dari bawaan plus tambahan pengguna.
+\begin{equation*}
+\Delta_{c} = \max(0.3\,H_{c},\,0.03)+\mathrm{sigHc}
+\end{equation*}
+Impedansi campuran adalah rata-rata berbobot dua keadaan.
+\begin{equation*}
+Z = p\,Z_{+}+(1-p)\,Z_{-}
+\end{equation*}
+Bila $p$ jenuh di atas $0.9995$ atau di bawah $0.0005$,
+kode langsung memakai satu cabang agar hemat.
+
+\subsection{Sebaran anisotropi film}
+Film nyata tidak seragam.
+Rata-rata atas sebaran normal $H_{k}$ memakai kuadratur tujuh titik.
+\begin{equation*}
+\bar Z(H) = \sum_{i=1}^{7} w_{i}\,Z(H;\,H_{k}+\sigma_{Hk}\,x_{i})
+\end{equation*}
+Titik yang keluar batas dijaga agar tetap positif sebagai berikut.
+\begin{equation*}
+H_{k,i} = \max(H_{k}+\sigma_{Hk}\,x_{i},\,0.05)
+\end{equation*}
+Nilai nol berarti seragam dan sama dengan perilaku lama.
+Bobot dan simpul $x_{i},w_{i}$ ada pada lampiran.
+
+%=====================================================================
+\section{Respons nanopartikel}
+%=====================================================================
+Volume bola dari diameter $d$ adalah sebagai berikut.
+\begin{equation*}
+V = \pi d^{3}/6
+\end{equation*}
+Magnetisasi dalam A/m dari masukan kilo-A/m adalah sebagai berikut.
+\begin{equation*}
+M_{s}[\mathrm{A/m}] = M_{sp}[\mathrm{kA/m}]\times 10^{3}
+\end{equation*}
+
+\subsection{Superparamagnetik: Langevin dan relaksasi Neel}
+Momen satu partikel adalah sebagai berikut.
+\begin{equation*}
+m_{p} = M_{s}\,V
+\end{equation*}
+Parameter perbandingan energi Zeeman terhadap termal adalah sebagai berikut.
+\begin{subequations}\label{eq:12}
+\begin{equation}
+\xi = \frac{m_{p}\,B}{k_{B}T}
+\label{eq:12a}
+\end{equation}
+Fungsi Langevin didefinisikan sebagai berikut.
+\begin{equation}
+L(\xi) = \coth\xi-1/\xi
+\label{eq:12b}
+\end{equation}
+Magnetisasi rata-rata mengikuti fungsi itu sebagai berikut.
+\begin{equation}
+M = M_{s}\,L(\xi)
+\label{eq:12c}
+\end{equation}
+\end{subequations}
+Untuk $\xi$ kecil dipakai deret agar stabil sebagai berikut.
+\begin{equation*}
+L(\xi) \approx \xi/3-\xi^{3}/45
+\end{equation*}
+Suseptibilitas transversal adalah magnetisasi dibagi medan.
+\begin{subequations}\label{eq:13}
+\begin{equation}
+\chi_{\perp} = \frac{\mu_{0}M_{s}\,L(\xi)}{B}
+\label{eq:13a}
+\end{equation}
+Limit medan nol memberi bentuk Curie sebagai berikut.
+\begin{equation}
+\chi(0) = \frac{\mu_{0}M_{s}^{2}\,V}{3k_{B}T}
+\label{eq:13b}
+\end{equation}
+\end{subequations}
+Waktu Neel untuk lompatan termal adalah sebagai berikut.
+\begin{subequations}\label{eq:14}
+\begin{equation}
+\tau_{N} = \tau_{0}\,\exp(KV/k_{B}T)
+\label{eq:14a}
+\end{equation}
+Eksponen dibatasi sampai 60 agar tidak meluap.
+Respons Debye pada frekuensi ukur adalah sebagai berikut.
+\begin{equation}
+\chi(\omega) = \frac{\chi_{\perp}}{1+j\omega\tau_{N}}
+\label{eq:14b}
+\end{equation}
+\end{subequations}
+Bentuk real dan imajiner yang dipakai kode adalah sebagai berikut
+($u$ adalah frekuensi ternormalisasi).
+\begin{equation*}
+u = \omega\,\tau_{N}
+\end{equation*}
+\begin{equation*}
+\mathrm{Re}\,\chi = \chi_{0}/(1+u^{2})
+\end{equation*}
+\begin{equation*}
+\mathrm{Im}\,\chi = -\chi_{0}\,u/(1+u^{2})
+\end{equation*}
+
+\subsection{Terblokir: Stoner--Wohlfarth acak plus resonansi}
+Suseptibilitas awal ansambel acak adalah sebagai berikut.
+\begin{subequations}\label{eq:15}
+\begin{equation}
+\chi_{i} = \frac{\mu_{0}M_{s}^{2}}{3K}
+\label{eq:15a}
+\end{equation}
+Medan anisotropi partikel adalah sebagai berikut.
+\begin{equation}
+B_{K} = \frac{2K}{M_{s}}
+\label{eq:15b}
+\end{equation}
+Medan koersif rata-rata ansambel acak adalah sebagai berikut.
+\begin{equation}
+B_{c} \approx 0.479\,B_{K}
+\label{eq:15c}
+\end{equation}
+\end{subequations}
+Magnetisasi statis didekati tangen hiperbolik yang digeser histeresis.
+\begin{equation*}
+s_{h} = B\mp B_{c}
+\end{equation*}
+Tanda atas untuk sapuan naik, tanda bawah untuk sapuan turun.
+\begin{equation*}
+a = \chi_{i}\,s_{h}/(\mu_{0}M_{s})
+\end{equation*}
+\begin{subequations}\label{eq:16}
+\begin{equation}
+M = M_{s}\,\tanh(a)
+\label{eq:16a}
+\end{equation}
+Medan RF sensor tegak lurus terhadap medan bias, sehingga yang relevan
+untuk kopling adalah suseptibilitas \emph{transversal}, bukan turunan
+magnetisasi. Dipakai bentuk interpolasi berikut, yang bernilai
+$\chi_{i}$ di medan nol dan menuju limit sekan superparamagnetik
+$\mu_{0}M_{s}/B$ pada medan tinggi.
+\begin{equation*}
+\chi_{\perp,b} = \frac{\chi_{i}}{1+|B|/(1.5\,B_{K})}
+\end{equation*}
+Histeresis hanya masuk lewat magnetisasi $M$. Bentuk ini heuristik.
+Versi sebelumnya memakai turunan $\chi_{i}/\cosh^{2}(a)$,
+yang tidak konsisten dengan model superparamagnetik.
+Frekuensi resonansi partikel adalah sebagai berikut.
+\begin{equation}
+\omega_{r} = \gamma\,(B_{K}+B)
+\label{eq:16b}
+\end{equation}
+Respons dinamik berbentuk osilator Lorentz sebagai berikut.
+\begin{equation}
+\chi(\omega) =
+\frac{\chi_{\perp,b}}{1-(\omega/\omega_{r})^{2}+2j\alpha_{p}\,\omega/\omega_{r}}
+\label{eq:16c}
+\end{equation}
+\end{subequations}
+Simbol $\alpha_{p}$ adalah redaman partikel (masukan panel, tipikal $0.05$).
+Faktor amplitudo momen untuk sebaran dipolar adalah sebagai berikut
+($\varpi$ adalah magnetisasi ternormalisasi).
+\begin{equation*}
+\varpi = M/M_{s}
+\end{equation*}
+\begin{equation*}
+s = \sqrt{\varpi^{2}+(1-\varpi^{2})/3}
+\end{equation*}
+Bentuk itu adalah interpolasi heuristik untuk akar rata-rata kuadrat
+proyeksi momen. Saturasi penuh memberi kuadrat satu sebagai berikut.
+\begin{equation*}
+s^{2} = 1
+\end{equation*}
+Acak penuh memberi kuadrat sepertiga sebagai berikut.
+\begin{equation*}
+s^{2} = 1/3
+\end{equation*}
+Sehingga faktornya sendiri adalah satu per akar tiga sebagai berikut.
+\begin{equation*}
+s = 1/\sqrt{3}\approx 0.577
+\end{equation*}
+Untuk partikel superparamagnetik, bentuk eksaknya adalah
+\begin{equation*}
+\langle\cos^{2}\theta\rangle = 1-2L(\xi)/\xi
+\end{equation*}
+dan bentuk itu tidak dipakai pada kode.
+
+\subsection{Paramagnetik, diamagnetik, dan rugi eddy logam}
+Untuk tipe para dan dia, suseptibilitas volume dianggap konstan.
+\begin{equation*}
+\chi = \chi_{V}
+\end{equation*}
+\begin{equation*}
+M_{p} = \chi_{V}\,B/\mu_{0}
+\end{equation*}
+Kode menyimpan $\mu_{0}M_{p}$ (dalam tesla), yaitu $\chi_{V}B$,
+sehingga $B_{s}$ pada \eqref{eq:20} konsisten dimensinya.
+\begin{equation*}
+s = 0
+\end{equation*}
+Bola logam berarus eddy menambah bagian imajiner negatif.
+Pendekatan frekuensi rendah diturunkan dari disipasi daya. Pada medan
+uniform berosilasi, medan induksi azimut di dalam bola berjari-jari $a$
+adalah sebagai berikut.
+\begin{equation*}
+E_{\varphi} = -j\omega B_{0}\,r\sin\theta/2
+\end{equation*}
+Daya rata-rata volume bola adalah sebagai berikut.
+\begin{equation*}
+P = \frac{\sigma}{2}\int |E_{\varphi}|^{2}\,dV
+= \frac{\pi}{15}\,\sigma\,\omega^{2}B_{0}^{2}\,a^{5}
+\end{equation*}
+Daya yang sama harus sama dengan serapan oleh suseptibilitas imajiner.
+Volume bola adalah sebagai berikut.
+\begin{equation*}
+V = 4\pi a^{3}/3
+\end{equation*}
+\begin{equation*}
+P = \frac{\omega}{2}\,\frac{\chi''B_{0}^{2}}{\mu_{0}}\,V
+\end{equation*}
+Menyamakan keduanya memberi bentuk yang dipakai.
+\begin{equation*}
+\chi_{\mathrm{eddy}} = -j\,\mu_{0}\,\sigma\,\omega\,(d/2)^{2}/10
+\end{equation*}
+Bentuk ekuivalen dengan diameter penuh adalah sebagai berikut.
+\begin{equation*}
+\chi_{\mathrm{eddy}} = -j\,\mu_{0}\,\sigma\,\omega\,d^{2}/40
+\end{equation*}
+Suku ini hanya aktif bila konduktivitas partikel positif.
+Nilai nol berarti isolator dan perilaku lama dipertahankan.
+
+\subsection{Sebaran diameter lognormal yang menjaga rata-rata}
+Diameter mengikuti lognormal dengan simpangan log $\sigma_{D}$.
+Diameter $d$ pada panel adalah rata-rata berbobot jumlah.
+Titik kuadratur yang menjaga mean adalah sebagai berikut.
+\begin{equation*}
+d_{i} = d\,\exp(\sigma_{D}\,x_{i}-\sigma_{D}^{2}/2)
+\end{equation*}
+Fraksi volume $\varphi$ dan massa adalah besaran volume, sehingga rata-rata
+besaran $q$ (magnetisasi, faktor $s$, dan $\chi$) memakai bobot volume.
+\begin{equation*}
+\bar q = \frac{\sum_{i} w_{i}\,d_{i}^{3}\,q(d_{i})}{\sum_{i} w_{i}\,d_{i}^{3}}
+\end{equation*}
+Versi sebelumnya memakai bobot jumlah partikel yang tidak konsisten dengan
+$\varphi$.
+Nilai nol berarti monodispers dan sama dengan satu pemanggilan langsung.
+
+%=====================================================================
+\section{Kopling lapisan partikel ke sensor}
+%=====================================================================
+\subsection{Tebal lapisan dan kedalaman interaksi}
+Massa $m$, massa jenis $\rho$, fraksi volume $\varphi$,
+luas sebaran $A_{c}$ memberi tebal sebagai berikut.
+\begin{subequations}\label{eq:17}
+\begin{equation}
+t_{p} = \frac{m}{\rho\,\varphi\,A_{c}}
+\label{eq:17a}
+\end{equation}
+Skala interaksi diambil sebanding dengan lebar strip. Ini \textbf{heuristik},
+bukan turunan: medan sebar strip sebenarnya meluruh secara aljabar dan
+tidak bergantung frekuensi, bukan secara eksponensial.
+\begin{equation}
+\lambda = \frac{w}{\pi}
+\label{eq:17b}
+\end{equation}
+Hanya lapisan setebal orde $\lambda$ yang berinteraksi,
+sehingga dipakai tebal efektif jenuh sebagai berikut.
+\begin{equation}
+t_{\mathrm{eff}} = \lambda\,\bigl(1-e^{-t_{p}/\lambda}\bigr)
+\label{eq:17c}
+\end{equation}
+\end{subequations}
+Bila lapisan tipis, tebal efektif sama dengan tebal nyata.
+Bila lapisan tebal, tebal efektif jenuh di $\lambda$.
+Inilah alasan kurva kalibrasi massa melengkung dan jenuh.
+
+\subsection{Faktor demagnetisasi spheroid pipih}
+Jari-jari ekuivalen sebaran adalah sebagai berikut.
+\begin{equation*}
+a = \sqrt{A_{c}/\pi}
+\end{equation*}
+Rasio sumbu pipih adalah sebagai berikut.
+\begin{equation*}
+e = (t_{p}/2)/a
+\end{equation*}
+Faktor demagnetisasi tegak lurus adalah sebagai berikut.
+\begin{equation*}
+N_{z} = \frac{1-e\,\arccos e/\sqrt{1-e^{2}}}{1-e^{2}}
+\end{equation*}
+Kasus batas ditangani sebagai berikut.
+\begin{equation*}
+N_{z} = 1/3\quad\text{untuk}\quad e\ge 1
+\end{equation*}
+\begin{equation*}
+N_{z} = 1\quad\text{untuk}\quad e\le 0
+\end{equation*}
+Faktor dalam bidang mengikuti jejak tensor satuan.
+\begin{equation*}
+N_{\mathrm{in}} = (1-N_{z})/2
+\end{equation*}
+Jadi film sangat tipis memberi faktor dalam bidang menuju nol,
+dan bola memberi sepertiga, sebagai berikut.
+\begin{equation*}
+N_{\mathrm{in}}\to 0\quad\text{film tipis},\qquad
+N_{\mathrm{in}} = 1/3\quad\text{bola}
+\end{equation*}
+Fungsi \texttt{Nin} pada kode langsung
+mengembalikan $N_{\mathrm{in}}$ dengan nilai batas tersebut.
+Rumus arccos hanya sahih untuk $e<1$; untuk $e\ge 1$ dipakai nilai bola
+sebagai pendekatan.
+
+\subsection{Mekanisme 1: kopling dinamis Maxwell--Garnett}
+Campuran partikel dalam matriks dianggap medium efektif.
+Fraksi yang dipakai adalah fraksi volume $\varphi$.
+\begin{subequations}\label{eq:18}
+\begin{equation}
+\frac{\mu_{L}-1}{\mu_{L}+2}
+=
+\varphi\,\frac{\mu_{p}-1}{\mu_{p}+2}
+\label{eq:18a}
+\end{equation}
+Permeabilitas partikel adalah sebagai berikut.
+\begin{equation}
+\mu_{p} = 1+\chi
+\label{eq:18b}
+\end{equation}
+\end{subequations}
+Bentuk pecahan di atas diselesaikan untuk $\mu_{L}$ pada kode
+dengan aritmetika kompleks eksplisit.
+Lapisan itu menambah fluks pada satu muka strip sehingga muncul
+tambahan impedansi seri sebagai berikut.
+\begin{equation}
+\Delta Z_{p} = j\,\omega\,\mu_{0}\,(\mu_{L}-1)\,t_{\mathrm{eff}}\,l/(2w)
+\label{eq:19}
+\end{equation}
+Bagian real $\Delta Z_{p}$ berasal dari bagian imajiner $\mu_{L}$,
+bagian imajiner $\Delta Z_{p}$ berasal dari bagian real $\mu_{L}$.
+
+\subsection{Mekanisme 2: medan sebar rata-rata}
+Lapisan termagnetisasi menimbulkan medan demagnetisasi melawan medan luar.
+Komponen tangensial kontinu sehingga sensor merasakan medan efektif
+lebih kecil sebagai berikut.
+\begin{equation}
+B_{s} = -N_{\mathrm{in}}\,\varphi\,\mu_{0}\,M_{p}(H)
+\label{eq:20}
+\end{equation}
+Medan efektif pada sensor adalah jumlah medan luar dan sebaran.
+\begin{equation*}
+H_{\mathrm{efektif}} = H_{m}+B_{s}\times 10^{3}
+\end{equation*}
+Faktor seribu adalah konversi tesla ke mili-tesla.
+
+\subsection{Mekanisme 3: sebaran dipolar dan rata-rata medan lokal}
+Medan dipol tetangga berfluktuasi dari titik ke titik.
+Lebar sebaran diperkirakan dari orde medan dipol sebagai berikut.
+\begin{subequations}\label{eq:21}
+\begin{equation}
+\sigma_{s} = C_{d}\,\varphi\,\mu_{0}\,M_{s}\,s
+\label{eq:21a}
+\end{equation}
+Faktor $C_{d}$ adalah koreksi perataan oleh kopling tukar dan geometri,
+suku paling tak-pasti pada model.
+Sensor merespons rata-rata atas sebaran itu sebagai berikut.
+\begin{equation}
+\bar Z = \sum_{i} w_{i}\,Z(H+B_{s}+\sigma_{s}\,x_{i})
+\label{eq:21b}
+\end{equation}
+\end{subequations}
+Rata-rata dihitung dengan kuadratur tujuh titik yang sama.
+
+\subsection{Impedansi total, cakupan, dua sisi, dan kabel}
+Jumlah semua kontribusi adalah sebagai berikut.
+\begin{equation}
+Z_{\mathrm{tot}} = \bar Z+\Delta Z_{p}+R_{c}+j\,\omega\,L_{p}
+\label{eq:22}
+\end{equation}
+Cakupan pulau $\eta$ mengecilkan ketiga efek partikel.
+\begin{equation*}
+B_{s} \to \eta\,B_{s}
+\end{equation*}
+\begin{equation*}
+\sigma_{s} \to \eta\,\sigma_{s}
+\end{equation*}
+\begin{equation*}
+\Delta Z_{p} \to \eta\,\Delta Z_{p}
+\end{equation*}
+Nilai satu berarti film kontinu dan sama dengan perilaku lama.
+Nilai nol berarti tidak ada interaksi.
+Lapisan dua sisi menggandakan kopling dinamis sebagai berikut.
+\begin{equation*}
+\Delta Z_{p} \to 2\,\Delta Z_{p}
+\end{equation*}
+Resistansi kabel termasuk efek kulit sebagai berikut.
+\begin{equation*}
+R_{c}(f) = R_{c0}+R_{c,\mathrm{skin}}\,\sqrt{f_{\mathrm{MHz}}}
+\end{equation*}
+Arah perubahan puncak dapat dipahami sebagai berikut.
+Mekanisme dinamis cenderung menaikkan puncak bila $\chi$ besar di nol
+(khas superparamagnetik).
+Mekanisme sebaran cenderung menurunkan dan melebarkan puncak
+(khas terblokir bermomen beku).
+Simulator menampilkan hasil bersih apa adanya.
+
+%=====================================================================
+\section{Sapuan, derau, pita model, dan batas deteksi}
+%=====================================================================
+\subsection{Titik sapuan dengan zag halus di tengah}
+Himpunan titik positif dibangun dari langkah halus lalu kasar,
+selalu mencakup nol dan ujung sebagai berikut.
+\begin{equation*}
+\mathcal{P} = \{0\}\cup\{d_{1},2d_{1},\dots\}\cup\{\dots\}\cup\{H_{\max}\}
+\end{equation*}
+Cabang negatif adalah cerminannya, lalu digabung terurut.
+Sapuan naik memakai urutan itu, sapuan turun memakai kebalikannya.
+
+\subsection{Model tanpa derau pada tiap titik}
+Acuan tiap massa adalah modulus pada ujung naik sebagai berikut.
+\begin{equation*}
+Z_{\mathrm{ref}} = |Z(H_{\max}^{\mathrm{akt}},\mathrm{naik})|
+\end{equation*}
+Kurva model tanpa derau pada langkah halus adalah sebagai berikut.
+\begin{equation*}
+y(H) = 100\,(|Z(H)|-Z_{\mathrm{ref}})/Z_{\mathrm{ref}}
+\end{equation*}
+Puncak, posisi, dan lebar setengah-tinggi dibaca dari kurva itu
+dengan interpolasi linear antar titik.
+
+\subsection{Data terukur dengan derau ganda}
+Acuan terukur ikut berderau sebagai berikut.
+\begin{equation*}
+Z_{\mathrm{ref,meas}} = Z_{\mathrm{ref}}\,(1+\sigma_{Z}\,n_{0}/100)
+\end{equation*}
+Tiap titik memakai medan aktual fisis lalu dibaca dengan derau probe.
+Modulus ikut berderau sebagai berikut.
+\begin{equation*}
+Z_{\mathrm{meas}} = |Z(H_{\mathrm{act}})|\,(1+\sigma_{Z}\,n_{1}/100)
+\end{equation*}
+MIR terukur memakai acuan terukur yang sama sebagai berikut.
+\begin{equation*}
+\mathrm{MIR}_{\mathrm{meas}} = 100\,(Z_{\mathrm{meas}}-Z_{\mathrm{ref,meas}})/Z_{\mathrm{ref,meas}}
+\end{equation*}
+Derau $n$ adalah normal baku dari generator deterministik agar
+dapat diulang dengan benih yang sama.
+
+\subsection{Sensitivitas awal dan batas deteksi}
+Sensitivitas adalah turunan puncak terhadap massa di nol,
+didekati beda hingga sebagai berikut. Langkah dipilih adaptif
+agar tetap pada rezim linear, yaitu pada lima persen lambda sebagai berikut.
+\begin{equation*}
+t_{p} = 0.05\,\lambda
+\end{equation*}
+Nilai tetap $0.02$ g hanya dipakai bila tidak ada partikel.
+\begin{equation*}
+dm = 0.05\,\lambda\,\rho\,\varphi\,A_{c}
+\end{equation*}
+\begin{equation*}
+S = \bigl[P(dm)-P(0)\bigr]/dm
+\end{equation*}
+Derau MIR pada puncak mengikuti propagasi dua pembacaan berderau.
+\begin{subequations}\label{eq:23}
+\begin{equation}
+\sigma_{\mathrm{MIR}} \approx (1+\mathrm{MIR}/100)\,\sqrt{2}\,\sigma_{Z}
+\label{eq:23a}
+\end{equation}
+Batas deteksi tiga-sigma adalah sebagai berikut.
+\begin{equation}
+m_{\mathrm{LOD}} = 3\,\sigma_{\mathrm{MIR}}/|S|
+\label{eq:23b}
+\end{equation}
+\end{subequations}
+Bila sensitivitas nol, batas menjadi tak-hingga.
+
+\subsection{Satu definisi sigma untuk pita, residu, dan fit}
+Derau medan dipropagasi lewat kemiringan kurva.
+Gabungan derau aktual dan derau baca adalah sebagai berikut.
+\begin{equation*}
+\sigma_{H,\mathrm{tot}} = \sqrt{\sigma_{H}^{2}+\sigma_{Hr}^{2}}
+\end{equation*}
+Suku derau impedansi dalam poin persen adalah sebagai berikut.
+\begin{equation*}
+\sigma_{Z}^{\prime} = \sigma_{Z}\,\sqrt{2}\,(1+m/100)
+\end{equation*}
+Gabungan total adalah sebagai berikut.
+\begin{equation*}
+\sigma = \sqrt{(|d\mathrm{MIR}/dH|\,\sigma_{H,\mathrm{tot}})^{2}
++{\sigma_{Z}^{\prime}}^{2}}
+\end{equation*}
+Bawahnya dibatasi sangat kecil agar tidak nol persis.
+Kemiringan memakai stencil lima titik agar tidak bergerigi di puncak tajam.
+Pita model adalah kurva plus-minus satu sigma sebagai berikut.
+\begin{equation*}
+y_{\mathrm{atas}} = y+\sigma
+\end{equation*}
+\begin{equation*}
+y_{\mathrm{bawah}} = y-\sigma
+\end{equation*}
+Residu eksperimen adalah selisih terhadap model sebagai berikut.
+\begin{equation*}
+r = \mathrm{MIR}_{\mathrm{exp}}-\mathrm{MIR}_{\mathrm{mod}}
+\end{equation*}
+Kecocokan per derajat bebas mengikuti bentuk khi-kuadrat sebagai berikut.
+\begin{equation*}
+\chi^{2}/\mathrm{DoF} = \frac{1}{\mathrm{DoF}}\sum (r/\sigma)^{2}
+\end{equation*}
+Nilai sekitar satu berarti konsisten, jauh di atas satu berarti salah model
+sistematis, bukan sekadar kurang derau.
+Catatan: derau acuan $n_{0}$ dipakai bersama oleh semua titik satu sampel
+(korelasi common-mode), sedangkan $\sigma$ di atas menganggap titik
+independen, sehingga $\chi^{2}/\mathrm{DoF}$ sedikit diremehkan.
+Model untuk data campuran arah memakai rata-rata naik-turun,
+yang menghapus histeresis.
+\begin{equation*}
+\mathrm{MIR}_{\mathrm{mod}}(H) =
+100\,\bigl(0.5\,(|Z_{u}|+|Z_{d}|)-Z_{\mathrm{ref}}\bigr)/Z_{\mathrm{ref}}
+\end{equation*}
+Optimasi tanpa turunan memakai simpleks Nelder--Mead:
+pantulkan, kembangkan, kerutkan, dan susutkan sampai sebaran nilai kecil.
+Protokol yang disarankan adalah kunci sensor dari sampel nol dulu,
+baru cocokkan kopling global, dan uji buta pada massa yang tidak ikut fit.
+
+\appendix
+\section{Tabel kuadratur tujuh titik}
+Nilai berikut adalah simpul normal baku dan bobotnya.
+Jumlah bobot adalah satu.
+\begin{center}
+\begin{tabular}{cc}
+\toprule
+Simpul & Bobot\\
+\midrule
+0 & 0.457143\\
+plus-minus 1.154405 & 0.240123\\
+plus-minus 2.366759 & 0.0307571\\
+plus-minus 3.750440 & 0.000548269\\
+\bottomrule
+\end{tabular}
+\end{center}
+Asal nilai adalah simpul Gauss--Hermite fisikawan yang \emph{dikali}
+akar dua menjadi simpul probabilis sebagai berikut.
+\begin{equation*}
+x_{i} = \sqrt{2}\,y_{i}
+\end{equation*}
+Bobot fisikawan dibagi akar pi sebagai berikut.
+\begin{equation*}
+w_{i} = w_{i}^{\mathrm{fis}}/\sqrt{\pi}
+\end{equation*}
+Nilai dipakai untuk sebaran dipolar, sebaran anisotropi, dan diameter.
+Rata-rata umum berbentuk jumlah berbobot sebagai berikut.
+\begin{equation*}
+\bar q = \sum_{i=1}^{7} w_{i}\,q(x_{i})
+\end{equation*}
+
+\section{Asumsi, batas, dan daftar cek konfirmasi}
+Strip dianggap planar tak-hingga arah lebar sebagai berikut.
+\begin{equation*}
+w \gg t_{f},\,t_{\mathrm{cu}}
+\end{equation*}
+Implikasinya, efek tepi dan arus arah lebar diabaikan kecuali koreksi
+orde pertama melalui parameter tepi.
+Magnetisasi dianggap seragam berotasi koheren.
+Gerak dinding domain dan resonansi ketebalan tukar tidak dimodelkan
+penuh, sehingga sahih terutama di atas beberapa MHz pada film sederhana.
+Arus perpindahan diabaikan.
+Sensor dianggap terbias statis sejajar sumbu panjang.
+Lapisan partikel dianggap medium efektif isolator.
+Rugi eddy serbuk logam hanya lewat suseptibilitas kompleks,
+sehingga hasil serbuk logam adalah perkiraan.
+Kopling dinamis adalah pendekatan fluks satu muka, bukan solusi 3D penuh.
+Semua parameter bahan adalah tipikal literatur, bukan kalibrasi.
+Keterbatasan struktural yang diketahui dirinci pada Lampiran~\ref{app:empiris}.
+
+Daftar cek dan statusnya:
+batas DC dan batas homogen (otomatis, lulus),
+simetri dan pembalikan waktu (otomatis, lulus),
+koreksi tepi, dinding domain, $N_{\mathrm{in}}$, eddy, dan $\chi$ partikel
+(otomatis, lulus), saturasi acuan di ujung (peringatan di antarmuka),
+round-trip CSV dan uji buta pada massa yang tidak ikut fit
+(belum otomatis, perlu data).
+
+
+\section{Parameter empiris dan keterbatasan yang diketahui}\label{app:empiris}
+Tabel berikut memisahkan suku yang diturunkan dari suku yang heuristik
+atau berparameter bebas.
+\begin{center}
+\small
+\begin{tabular}{p{0.30\textwidth}p{0.62\textwidth}}
+\toprule
+Suku & Status\\
+\midrule
+Skala panjang interaksi & Heuristik; lihat definisi lambda pada bab kopling.\\
+$C_{d}$ & Parameter bebas; paling tak pasti pada model.\\
+edgeC & Parameter bebas; bentuk aditif (lihat bab koreksi tepi).\\
+dwAmp dan frekuensi relaksasi 5 MHz & Empiris; Debye kausal.\\
+sigHc dan lebar bawaan tiga persepuluh koersif & Empiris; lebar peralihan histeresis.\\
+Medan koersif ansatz dan tanh & Heuristik; remanen sekitar tiga persepuluh,
+bukan setengah seperti Stoner--Wohlfarth murni.\\
+Faktor amplitudo momen & Interpolasi heuristik
+(lihat sub-bab faktor amplitudo).\\
+$\chi_{\perp,b}$ & Interpolasi heuristik antara $\chi_{i}$ dan $\mu_{0}M_{s}/B$.\\
+$\tau_{N}$ pada seluruh respons & Waktu lompat penghalang dipakai untuk respons
+transversal; pendekatan.\\
+Sebaran $H_{k}$, diameter, dipolar & Kuadratur Gaussian; sebaran dipolar
+sebenarnya berekor berat (mendekati Lorentzian) sehingga ekornya diremehkan.\\
+$B_{s}$ skalar seragam & Medan sebar lapisan berhingga tidak seragam dan dapat
+berbalik tanda di dekat tepi.\\
+Pemilihan SPM/terblokir & Manual; peralihan sekitar $KV/k_{B}T\approx 25$.\\
+\bottomrule
+\end{tabular}
+\end{center}
+Prediksi kuantitatif batas deteksi bergantung kuat pada suku-suku ini,
+sehingga harus dikalibrasi terhadap data eksperimen.
+
+\section{Hasil uji mandiri}\label{app:uji}
+Uji berikut dijalankan pada kode simulator versi revisi
+(sensor NiFe; anisotropi 3 mT; film 1 $\mu$m; tembaga 2 $\mu$m;
+panjang 5 mm; lebar 0.5 mm). Semua lulus.
+\begin{center}
+\small
+\begin{tabular}{p{0.46\textwidth}p{0.42\textwidth}}
+\toprule
+Uji & Hasil\\
+\midrule
+Batas DC, $Z(100\ \mathrm{Hz})\to R_{\mathrm{dc}}$ &
+$0.0938087$ vs $0.0938086$ $\Omega$\\
+Batas homogen, $R_{\mathrm{dc}}kt\coth kt$ (50 MHz) & galat relatif $9\times10^{-18}$\\
+Simetri medan plus-minus & galat $0$\\
+Pembalikan waktu dengan koersif & galat $0$\\
+Koreksi tepi aditif & suseptibilitas statis $200.160$ (sama dengan teori)\\
+Dinding domain Debye & beda real $16.667$, beda imajiner $-16.667$\\
+Faktor dalam bidang film tipis & $1.6\times10^{-10}$\\
+Faktor dalam bidang menuju bola & $0.3332$ (menuju sepertiga)\\
+Rugi eddy & $-9.870\times10^{-5}$ (sama dengan teori seperempat-puluh)\\
+Suseptibilitas transversal di medan nol & $0.25656$ (sama dengan awal)\\
+Suseptibilitas transversal di medan seratus kali anisotropi &
+rasio $0.9852$ (mendekati satu)\\
+Sebaran diameter $\sigma_{D}\to0$ & galat $10^{-11}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+Uji ini memeriksa konsistensi internal dan batas analitik.
+Uji itu tidak menggantikan validasi terhadap data eksperimen.
+
+\end{document}

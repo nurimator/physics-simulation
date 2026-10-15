@@ -1,0 +1,6 @@
+# Arsip lokal: versi sebelum adopsi revisi reviewer (bukan bagian repo)
+temp/
+
+# Hasil kompilasi LaTeX: jangan lacak pdf/synctex di mana pun pada folder ini
+*.pdf
+*.synctex.gz

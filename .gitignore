@@ -4,3 +4,11 @@ temp/
 # Hasil kompilasi LaTeX: jangan lacak pdf/synctex di mana pun pada folder ini
 *.pdf
 *.synctex.gz
+
+# Cache Python: jangan lacak bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Checkpoint Jupyter: jangan lacak salinan .ipynb_checkpoints
+.ipynb_checkpoints/

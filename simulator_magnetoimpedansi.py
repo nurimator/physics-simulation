@@ -66,13 +66,13 @@ SENS = {
 
 
 def default_P() -> dict:
-    """Default = resetAll() JS: sens nife, sapuan 70 mT, f=10 MHz."""
+    """Default = resetAll() JS: sens nife, mat fe3o4, sapuan 70 mT, f=10 MHz, sigH=sigZ=0 (bawaan tanpa noise)."""
     s = SENS["nife"]
     P = dict(
         Ms=s["Ms"], alpha=s["alpha"], dH0=s["dH0"], sigF=s["sigF"], sigC=50.0, axis="long",
         Hk=3.0, sigHk=0.0, Hc=0.2, sigHc=0.0, edgeC=0.0, dwAmp=0.0,
         tf=1.0, tcu=2.0, len=5.0, wid=0.5, f=10.0, Rc=0.0, RcSkin=0.0, Lp=0.0,
-        Hmax=70.0, Hfine=10.0, d1=1.0, d2=3.0, sigH=0.1, sigZ=0.02,
+        Hmax=70.0, Hfine=10.0, d1=1.0, d2=3.0, sigH=0.0, sigZ=0.0,
         pf=0.2, Ac=20.0, Cd=0.1, T=300.0,
         eta=1.0, dblSide=False, showSet=False,
         kcoilTheory=0.0, kcoil=0.0, kcoilTrue=0.0, Boff=0.0, sigHr=0.0,
@@ -811,7 +811,7 @@ def fit_cd(P0: dict, mat: dict, exp_data: list, rows: list, row_peaks: list | No
 def auto_label(mass: float) -> str:
     """Tiruan autoLabel JS."""
     if mass <= 0:
-        return "Tanpa nano"
+        return "Tanpa sampel"
     return f"{mass:.3f}".rstrip("0").rstrip(".") + " gram"
 
 

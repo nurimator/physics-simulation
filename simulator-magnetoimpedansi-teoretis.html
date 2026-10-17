@@ -21,9 +21,12 @@ details.card{padding:12px 16px}
 details.card summary{cursor:pointer;font-weight:600;font-size:14px}
 details.card[open] summary{margin-bottom:10px}
 .ctl{margin-bottom:10px}
-.ctl label{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px;color:#344054}
-.ctl output{font-variant-numeric:tabular-nums;font-weight:600;color:var(--ink);white-space:nowrap}
+.ctl label{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;font-size:12.5px;color:#344054}
 input[type=range]{width:100%;accent-color:var(--acc);margin:4px 0 0;height:22px}
+.ctl .val{display:grid;grid-template-columns:104px auto;align-items:center;gap:6px}
+.ctl .val input[type=number]{width:100%;min-width:0;padding:4px 7px;font-variant-numeric:tabular-nums;text-align:right}
+.ctl .warn{color:var(--red);font-size:11px;font-weight:700;white-space:nowrap;min-width:0}
+.ctl .val input[type=number]::-webkit-inner-spin-button{opacity:1}
 select,input[type=number],input[type=text]{width:100%;padding:6px 8px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;font:inherit;color:var(--ink)}
 .field{margin-bottom:10px}
 .field>span{display:block;font-size:12.5px;color:#344054;margin-bottom:2px}
@@ -130,6 +133,8 @@ th{font-weight:600;color:#344054;background:#fafbfc;font-size:12px}
    </select></div>
   </div>
   <div class="subsec"><h3>Material partikel</h3>
+   <div class="field"><div class="lbl"><span class="left">Satuan Ms partikel <span class="info" tabindex="0" data-tip="Pilih satuan input Ms. Default emu/g (data VSM). Msp(kA/m) = sigma(emu/g) kali rho(g/cm3). Bisa switch kembali ke kA/m; nilai fisis dipertahankan bila dalam range slider, bila di luar range akan dibatasi ke min/max."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></div><select id="unitMs" form="ctlForm"><option value="emu/g" selected>emu/g (default)</option><option value="kA/m">kA/m</option></select></div>
+   <div class="field"><div class="lbl"><span class="left">Satuan anisotropi K <span class="info" tabindex="0" data-tip="Pilih satuan input K. Default erg/cm3 (data literatur magnet). 1 kJ/m3 = 10000 erg/cm3. Bisa switch kembali ke kJ/m3; nilai fisis dipertahankan bila dalam range slider, bila di luar range akan dibatasi ke min/max."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></div><select id="unitK" form="ctlForm"><option value="erg/cm3" selected>erg/cm3 (default)</option><option value="kJ/m3">kJ/m3</option></select></div>
    <div id="g_mat"></div>
   </div>
   <div class="subsec"><h3>Lapisan sampel</h3>
@@ -148,6 +153,7 @@ th{font-weight:600;color:#344054;background:#fafbfc;font-size:12px}
    <div id="g_film"></div>
   </div>
   <div class="subsec"><h3>Geometri dan ukur</h3>
+   <div class="field"><div class="lbl"><span class="left">Satuan Hc &amp; sebaran Hc <span class="info" tabindex="0" data-tip="Pilih satuan input Hc dan sebaran Hc. Default Oe (data VSM/literatur). 1 mT = 10 Oe. Mengendalikan Hc dan sigHc sekaligus. Bisa switch kembali ke mT; nilai fisis dipertahankan bila dalam range slider."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></div><select id="unitHc" form="ctlForm"><option value="Oe" selected>Oe (default)</option><option value="mT">mT</option></select></div>
    <div id="g_sensor"></div>
   </div>
   <div class="subsec"><h3>Koreksi empiris</h3>
@@ -178,7 +184,7 @@ th{font-weight:600;color:#344054;background:#fafbfc;font-size:12px}
     <button type="button" id="clearExp">Hapus data eksperimen</button>
   </div>
   <label class="chk"><input type="checkbox" id="showExp" checked form="ctlForm"> <span class="left">Data eksperimen dan residu <span class="info" tabindex="0" data-tip="Lingkaran hitam di grafik plus tabel residu EXP minus model."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></label>
-  <label class="chk"><input type="checkbox" id="showBand" checked form="ctlForm"> <span class="left">Pita model 1σ <span class="info" tabindex="0" data-tip="Pita analitik dari noise Z plus propagasi noise medan via kemiringan. Ikut sumbu X."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></label>
+  <label class="chk"><input type="checkbox" id="showBand" form="ctlForm"> <span class="left">Pita model 1σ <span class="info" tabindex="0" data-tip="Pita analitik dari noise Z plus propagasi noise medan via kemiringan. Ikut sumbu X."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></label>
   <p class="note" id="expInfo">Belum ada data eksperimen yang diimpor.</p>
   <div class="field"><div class="lbl"><span class="left">Label acuan 0g untuk fit <span class="info" tabindex="0" data-tip="Sampel eksperimen tanpa partikel untuk mengunci Hk dan sigHk dulu."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></div><select id="fitRef" form="ctlForm"></select></div>
   <div class="btns" style="margin-bottom:8px">
@@ -633,6 +639,18 @@ function ticksFor(a,b,step){const t=[];for(let v=Math.ceil(a/step-1e-9)*step;v<=
 const NS='http://www.w3.org/2000/svg';
 function el(name,attrs,parent,text){const e=document.createElementNS(NS,name);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!==undefined)e.textContent=text;if(parent)parent.appendChild(e);return e;}
 
+/* Teks label dengan subscript ala "H_terbaca": garis bawah + kata menjadi tspan sub */
+function richText(parent,str,attrs){
+  const t=el('text',attrs,parent);
+  let shifted=false;
+  String(str).split(/_([A-Za-z0-9]+)/).forEach((p,i)=>{
+    if(!p)return;
+    if(i%2===1){el('tspan',{'font-size':'72%',dy:shifted?'0':'3'},t,p);shifted=true;}
+    else{el('tspan',{'font-size':'100%',dy:shifted?'-3':'0'},t,p);shifted=false;}
+  });
+  return t;
+}
+
 /* ---------- Mesin grafik SVG ---------- */
 let chartUid=0;
 function drawChart(host,spec){
@@ -640,6 +658,18 @@ function drawChart(host,spec){
   host.innerHTML='';
   const svg=el('svg',{width:W,height:H,viewBox:`0 0 ${W} ${H}`,'font-family':SERIF},host);
   const m={l:spec.ml||70,r:spec.mr||18,t:spec.mt||16,b:spec.mb||56};
+  /* margin kiri dari lebar tick aktual yang terukur: celah selalu pas, tak lebih tak kurang */
+  const yfA=spec.yfmt||(v=>String(v));
+  const yStrs=(spec.yticks||[]).map(t=>String(yfA(t)));
+  let maxTickW=0;
+  try{
+    const meas=el('text',{'font-size':15,visibility:'hidden'},svg);
+    yStrs.forEach(s=>{meas.textContent=s;const w=meas.getComputedTextLength();if(w>maxTickW)maxTickW=w;});
+    meas.remove();
+  }catch(err){/* abaikan, pakai estimasi di bawah */}
+  if(!(maxTickW>0))maxTickW=Math.max(2,...yStrs.map(s=>s.length))*7.8;
+  m.l=Math.min(140,Math.max(40,maxTickW+32.5));
+  const ylabX=Math.max(11,m.l-maxTickW-22.5);
   const pw=W-m.l-m.r, ph=H-m.t-m.b;
   const fx=spec.xlog?(v=>Math.log10(v)):(v=>v);
   const x0=fx(spec.xmin), x1=fx(spec.xmax);
@@ -689,8 +719,8 @@ function drawChart(host,spec){
   if(spec.extra) spec.extra(g,{sx,sy,m,pw,ph,svg});
   if(spec.highlight){const h=spec.highlight;el('circle',{cx:sx(h.x),cy:sy(h.y),r:9,fill:'rgba(226,52,52,.15)',stroke:'#e23434','stroke-width':2.4},g);}
   el('rect',{x:m.l,y:m.t,width:pw,height:ph,fill:'none',stroke:'#000','stroke-width':1.4},svg);
-  el('text',{x:m.l+pw/2,y:H-10,'text-anchor':'middle','font-size':17,fill:'#000'},svg,spec.xlabel||'');
-  el('text',{transform:`translate(18 ${m.t+ph/2}) rotate(-90)`,'text-anchor':'middle','font-size':17,fill:'#000'},svg,spec.ylabel||'');
+  richText(svg,spec.xlabel||'',{x:m.l+pw/2,y:H-10,'text-anchor':'middle','font-size':17,fill:'#000'});
+  richText(svg,spec.ylabel||'',{transform:`translate(${ylabX} ${m.t+ph/2}) rotate(-90)`,'text-anchor':'middle','font-size':17,fill:'#000'});
   /* legenda */
   if(spec.legend&&spec.legend.length){
     const rowH=19, lw=Math.max(...spec.legend.map(l=>l.label.length))*7.6+56;
@@ -753,12 +783,12 @@ const SENS={
 const INFO_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
 const CFG={
   g_mat:[
-    {id:'mMsp',label:'Ms partikel (kA/m)',min:0,max:1800,step:5,val:400,unit:'kA/m',tip:'Magnetisasi saturasi partikel. Momen m sama dengan Ms kali V, menentukan skala Langevin dan medan dipolar.'},
+    {id:'mMsp',label:'Ms partikel (emu/g)',min:0,max:400,step:0.5,val:77.22,unit:'emu/g',tip:'Magnetisasi saturasi spesifik (data VSM). Msp(kA/m) = sigma(emu/g) kali rho(g/cm3). Momen m = Ms kali V, menentukan skala Langevin dan medan dipolar.'},
     {id:'md',label:'Diameter inti (nm)',min:1,max:1000,step:1,val:10,unit:'nm',tip:'Diameter rata-rata berbobot jumlah. Volume V sebanding d pangkat 3, menentukan KV per kT dan chi.'},
-    {id:'mK',label:'Anisotropi K (kJ/m3)',min:0,max:5000,step:0.1,val:11,unit:'kJ/m3',tip:'Anisotropi uniaksial. Menentukan BK sama dengan 2K per Ms, waktu Neel, dan chi awal terblokir.'},
+    {id:'mK',label:'Anisotropi K (erg/cm3)',min:0,max:50000000,step:1000,val:110000,unit:'erg/cm3',tip:'Anisotropi uniaksial (1 kJ/m3 = 10000 erg/cm3). Menentukan BK = 2K/Ms, waktu Neel, dan chi awal terblokir.'},
     {id:'mtau0',label:'Tau0 Neel (ns)',min:0.05,max:5,step:0.05,val:1,unit:'ns',tip:'Waktu coba Neel. TauN sama dengan tau0 kali exp KV per kT, menentukan relaksasi superparamagnetik.'},
     {id:'malphaP',label:'Redaman partikel',min:0.005,max:0.3,step:0.005,val:0.05,unit:'',tip:'Redaman dinamik partikel untuk resonansi partikel terblokir.'},
-    {id:'mchiV',label:'Chi volume linear',min:-0.002,max:0.02,step:0.000001,val:0,unit:'SI',tip:'Hanya untuk dia dan paramagnetik linear. Nol untuk superparamagnetik dan terblokir.'},
+    {id:'mchiV',label:'Chi volume linear (SI)',min:-0.002,max:0.02,step:0.000001,val:0,unit:'SI',tip:'Hanya untuk dia dan paramagnetik linear. Nol untuk superparamagnetik dan terblokir.'},
     {id:'mrho',label:'Massa jenis (g/cm3)',min:2,max:20,step:0.01,val:5.18,unit:'g/cm3',tip:'Untuk konversi massa ke tebal lapisan tp sama dengan m per rho phi Ac.'}
   ],
   g_part:[
@@ -766,7 +796,7 @@ const CFG={
     {id:'mAc',label:'Luas sebaran (cm2)',min:1,max:100,step:0.5,val:20,unit:'cm2',tip:'Luas sebaran serbuk. Bersama massa menentukan tebal tp dan faktor demagnetisasi Nin.'},
     {id:'mCd',label:'Faktor sebaran dipolar Cd',min:0,max:1,step:0.001,val:0.1,unit:'',tip:'Koreksi sebaran dipolar 0 sampai 1. Nol seragam, satu penuh. Suku paling heuristik.'},
     {id:'msigD',label:'Sebaran diameter (sigma)',min:0,max:1,step:0.01,val:0,unit:'',tip:'Lebar lognormal diameter. Nol monodispers. Dirata-rata berbobot volume d pangkat 3.'},
-    {id:'msigP',label:'Konduktivitas partikel',min:0,max:60,step:0.5,val:0,unit:'MS/m',tip:'Rugi eddy bola logam. Menambah chi imaginer. Nol sama dengan isolator.'},
+    {id:'msigP',label:'Konduktivitas partikel (MS/m)',min:0,max:60,step:0.5,val:0,unit:'MS/m',tip:'Rugi eddy bola logam. Menambah chi imaginer. Nol sama dengan isolator.'},
     {id:'mT',label:'Suhu (K)',min:5,max:800,step:1,val:300,unit:'K',tip:'Suhu mutlak untuk Langevin dan Neel lewat rasio KV per kT.'}
   ],
   g_film:[
@@ -778,8 +808,8 @@ const CFG={
   ],
   g_sensor:[
     {id:'Hk',label:'Anisotropi Hk rata-rata (mT)',min:0.1,max:40,step:0.1,val:3,unit:'mT',tip:'Medan anisotropi film. Menentukan posisi puncak transversal dan chi nol.'},
-    {id:'sigHk',label:'Sebaran Hk (std, 0 seragam)',min:0,max:5,step:0.05,val:0,unit:'mT',tip:'Inhomogenitas film. Dirata-rata Gauss-Hermite 7 titik.'},
-    {id:'Hc',label:'Koersif sensor Hc (mT)',min:0,max:2,step:0.05,val:0.2,unit:'mT',tip:'Koersif longitudinal. Menggeser puncak naik dan turun berlawanan arah.'},
+    {id:'sigHk',label:'Sebaran Hk (std mT, 0 seragam)',min:0,max:5,step:0.05,val:0,unit:'mT',tip:'Inhomogenitas film. Dirata-rata Gauss-Hermite 7 titik.'},
+    {id:'Hc',label:'Koersif sensor Hc (Oe)',min:0,max:20,step:0.5,val:2,unit:'Oe',tip:'Koersif longitudinal (1 mT = 10 Oe). Menggeser puncak naik dan turun berlawanan arah.'},
     {id:'tf',label:'Tebal tiap lapis magnetik (um)',min:0.2,max:6,step:0.1,val:1,unit:'um',tip:'Tebal satu lapisan F. Masuk impedansi trilayer dan Nw tepi.'},
     {id:'tcu',label:'Tebal total inti Cu (um)',min:0.2,max:10,step:0.2,val:2,unit:'um',tip:'Tebal total inti Cu. Masuk Rdc dan solusi Maxwell.'},
     {id:'len',label:'Panjang strip (mm)',min:1,max:20,step:0.5,val:5,unit:'mm',tip:'Panjang strip. Skala tegangan V sama dengan Es kali l.'},
@@ -789,23 +819,23 @@ const CFG={
     {id:'Lp',label:'Induktansi parasit (nH)',min:0,max:200,step:1,val:0,unit:'nH',tip:'Induktansi parasit kabel seri.'}
   ],
   g_corr:[
-    {id:'sigHc',label:'Sebaran Hc (std, mT)',min:0,max:2,step:0.02,val:0,unit:'mT',tip:'Sebaran medan koersif. Melebarkan switching di sekitar Hc.'},
+    {id:'sigHc',label:'Sebaran Hc (std, Oe)',min:0,max:20,step:0.2,val:0,unit:'Oe',tip:'Sebaran medan koersif (1 mT = 10 Oe). Melebarkan switching di sekitar Hc.'},
     {id:'edgeC',label:'Koreksi tepi edgeC (0 mati, 1 penuh)',min:0,max:1,step:0.01,val:0,unit:'',tip:'Demagnetisasi penampang Ny sama dengan edgeC kali Nw. Menggeser Hk efektif dan kekakuan luar bidang.'},
     {id:'dwAmp',label:'Dinding domain (% chi)',min:0,max:50,step:0.5,val:0,unit:'%',tip:'Relaksasi Debye 5 MHz kausal. Nol sama dengan mati.'}
   ],
   g_meas:[
-    {id:'N',label:'Lilitan per kumparan',min:100,max:3000,step:50,val:1000,unit:'lilitan',tip:'Jumlah lilitan tiap kumparan Helmholtz. Menentukan konstanta teori 0.7155 mu0 N per R.'},
+    {id:'N',label:'Lilitan per kumparan (lilitan)',min:100,max:3000,step:50,val:1000,unit:'lilitan',tip:'Jumlah lilitan tiap kumparan Helmholtz. Menentukan konstanta teori 0.7155 mu0 N per R.'},
     {id:'Rcoil',label:'Jari-jari kumparan (cm)',min:3,max:15,step:0.5,val:6,unit:'cm',tip:'Jari-jari dan jarak kumparan. Medan pusat sebanding N kali I per R.'},
     {id:'Hmax',label:'Medan maksimum sapuan (mT)',min:20,max:120,step:5,val:70,unit:'mT',tip:'Ujung sapuan. Juga acuan MIR. Naikkan bila Z belum saturasi di tepi.'},
     {id:'Hfine',label:'Daerah langkah halus (mT)',min:4,max:30,step:1,val:10,unit:'mT',tip:'Rentang sekitar nol dengan langkah halus d1.'},
     {id:'d1',label:'Langkah halus (mT)',min:0.2,max:4,step:0.1,val:1,unit:'mT',tip:'Step di daerah halus untuk menangkap puncak tajam.'},
     {id:'d2',label:'Langkah kasar (mT)',min:1,max:10,step:0.5,val:3,unit:'mT',tip:'Step di luar daerah halus untuk hemat titik.'},
-    {id:'sigH',label:'Jitter medan aktual (mT)',min:0,max:1,step:0.01,val:0.1,unit:'mT',tip:'Fluktuasi medan aktual, masuk fisika Z. Berperan saat sumbu H atur.'},
-    {id:'sigZ',label:'Noise impedansi (%)',min:0,max:0.2,step:0.005,val:0.02,unit:'%',tip:'Noise relatif tiap baca Z dan acuan. Menentukan pita dan LOD.'}
+    {id:'sigH',label:'Jitter medan aktual (mT)',min:0,max:1,step:0.01,val:0,unit:'mT',tip:'Fluktuasi medan aktual, masuk fisika Z. Berperan saat sumbu H atur.'},
+    {id:'sigZ',label:'Noise impedansi (%)',min:0,max:0.2,step:0.005,val:0,unit:'%',tip:'Noise relatif tiap baca Z dan acuan. Menentukan pita dan LOD.'}
   ],
   g_cal:[
-    {id:'kMeas',label:'Konstanta perintah k_cmd (0 teori)',min:0,max:30,step:0.1,val:0,unit:'mT/A',tip:'Kalibrasi perintah. Nol memakai teori N per R.'},
-    {id:'kTrue',label:'Konstanta aktual k_true (0 ikut cmd)',min:0,max:30,step:0.1,val:0,unit:'mT/A',tip:'Kalibrasi aktual. Nol sama dengan k_cmd. Haktual sama dengan kTrue kali I plus Boff.'},
+    {id:'kMeas',label:'Konstanta perintah k_cmd (mT/A; 0 teori)',min:0,max:30,step:0.1,val:0,unit:'mT/A',tip:'Kalibrasi perintah. Nol memakai teori N per R.'},
+    {id:'kTrue',label:'Konstanta aktual k_true (mT/A; 0 ikut cmd)',min:0,max:30,step:0.1,val:0,unit:'mT/A',tip:'Kalibrasi aktual. Nol sama dengan k_cmd. Haktual sama dengan kTrue kali I plus Boff.'},
     {id:'Boff',label:'Offset medan Boff (mT)',min:-5,max:5,step:0.05,val:0,unit:'mT',tip:'Medan tetap Bumi plus remanen.'},
     {id:'sigHr',label:'Noise baca probe (mT)',min:0,max:1,step:0.01,val:0,unit:'mT',tip:'Salah baca probe, hanya sumbu X. Isi ketidakpastian medan eksperimen di sini.'},
     {id:'eta',label:'Cakupan partikel eta (0-1)',min:0,max:1,step:0.01,val:1,unit:'',tip:'Fraksi cakupan. Satu film kontinu, kurang dari satu mengecilkan Bs dan sigma.'},
@@ -818,18 +848,158 @@ function mkSlider(host,c){
   if(!host) return;
   const w=document.createElement('div'); w.className='ctl';
   const tip=c.tip?`<span class="info" tabindex="0" data-tip="${escTip(c.tip)}">${INFO_SVG}</span>`:'';
-  w.innerHTML=`<label for="${c.id}"><span class="left">${c.label} ${tip}</span><output></output></label><input type="range" id="${c.id}" form="ctlForm" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.val}">`;
+  const isLog=!!c.log;
+  const numMin=isLog?Math.pow(10,c.min):c.min;
+  const numMax=isLog?Math.pow(10,c.max):c.max;
+  const numVal=isLog?Math.pow(10,c.val):c.val;
+  const numStep='any';
+  w.innerHTML=`<label for="${c.id}"><span class="left">${c.label} ${tip}</span><span class="val"><input type="number" id="${c.id}_num" form="ctlForm" min="${numMin}" max="${numMax}" step="${numStep}" value="${numVal}" aria-label="${escTip(c.label)} (nilai eksak)"><span class="warn"></span></span></label><input type="range" id="${c.id}" form="ctlForm" min="${c.min}" max="${c.max}" step="${c.step}" value="${c.val}">`;
   host.appendChild(w);
-  const inp=w.querySelector('input'), out=w.querySelector('output');
-  const show=()=>{const v=+inp.value; out.textContent=(c.log?fmtNum(Math.pow(10,v)):fmtNum(v))+(c.unit?' '+c.unit:'');};
-  outs[c.id]=show; inp.addEventListener('input',()=>{show();schedule();}); show();
+  const inp=w.querySelector('input[type=range]'), num=w.querySelector('input[type=number]');
+  const warnEl=w.querySelector('.warn');
+  const show=force=>{
+    const v=sval(c.id,+inp.value);
+    if(force||document.activeElement!==num){num.value=isLog?+Math.pow(10,v).toFixed(6):fmtExact(v);}
+  };
+  const parseNum=s=>{
+    let t=String(s==null?'':s).trim();
+    if(!t) return NaN;
+    if(t.indexOf(',')>=0&&t.indexOf('.')<0) t=t.replace(',','.');
+    return parseFloat(t);
+  };
+  const clearWarn=()=>{inp.title='';num.title='';if(warnEl)warnEl.textContent='';};
+  outs[c.id]=show;
+  inp.addEventListener('input',()=>{svalMap[c.id]=+inp.value;clearWarn();show();schedule();});
+  const numToRange=()=>{
+    const nv=parseNum(num.value);
+    if(!isFinite(nv)) return false;
+    let v,clamped;
+    if(isLog){v=Math.log10(clamp(nv,numMin,numMax));clamped=nv<numMin||nv>numMax;}
+    else{v=clamp(nv,c.min,c.max);clamped=nv<c.min||nv>c.max;}
+    svalMap[c.id]=v; inp.value=v;
+    clearWarn();
+    if(clamped){const lo=isLog?numMin:c.min,hi=isLog?numMax:c.max;const note='Nilai dibatasi ke ['+lo+'..'+hi+']';inp.title=note;num.title=note;if(warnEl)warnEl.textContent='\u26A0 dibatasi';}
+    show();return true;
+  };
+  num.addEventListener('input',()=>{if(numToRange())schedule();});
+  num.addEventListener('change',()=>{const nv=parseNum(num.value);if(!isFinite(nv)){show(true);}else{numToRange();show(true);schedule();}});
+  svalMap[c.id]=c.val;
+  show();
 }
+/* ---------- Nilai kanonis tiap slider: angka eksak dari kolom input tidak boleh di-snap ke step ---------- */
+const svalMap={};
+function sval(id,fb){ if(Object.prototype.hasOwnProperty.call(svalMap,id)) return svalMap[id]; return fb||0; }
+function sset(id,val){
+  const c=cfgOf(id);
+  let v=isFinite(+val)?+val:0;
+  if(c) v=clamp(v,c.min,c.max);
+  svalMap[id]=v;
+  const inp=document.getElementById(id), num=document.getElementById(id+'_num');
+  if(inp) inp.value=v;
+  if(num) num.value=c&&c.log?+Math.pow(10,v).toFixed(6):fmtExact(v);
+}
+const fmtExact=v=>String(+v.toFixed(6));
 for(const g in CFG){ const host=$('#'+g); CFG[g].forEach(c=>mkSlider(host,c)); }
 const refreshOutputs=()=>Object.values(outs).forEach(fn=>fn());
 
+/* ---------- Satuan Ms & K bisa switch, default emu/g & erg/cm3 ---------- */
+const MS_RANGE={'emu/g':{min:0,max:400,step:0.5,unit:'emu/g',label:'Ms partikel (emu/g)'},'kA/m':{min:0,max:1800,step:5,unit:'kA/m',label:'Ms partikel (kA/m)'}};
+const K_RANGE={'erg/cm3':{min:0,max:50000000,step:1000,unit:'erg/cm3',label:'Anisotropi K (erg/cm3)'},'kJ/m3':{min:0,max:5000,step:0.1,unit:'kJ/m3',label:'Anisotropi K (kJ/m3)'}};
+const ERG_PER_KJ=1e4;
+const DEF_UNIT_MS='emu/g', DEF_UNIT_K='erg/cm3';
+let prevUnitMs=DEF_UNIT_MS, prevUnitK=DEF_UNIT_K;
+function cfgOf(id){for(const g in CFG){const f=CFG[g].find(c=>c.id===id);if(f)return f;}return null;}
+function unitMs(){const e=document.getElementById('unitMs');return e?e.value:DEF_UNIT_MS;}
+function unitK(){const e=document.getElementById('unitK');return e?e.value:DEF_UNIT_K;}
+function rhoNow(){const v=sval('mrho',0);return Math.max(v||5.18,0.1);}
+function reconfSlider(id,rng,value,note){
+  const c=cfgOf(id); if(c){c.label=rng.label;c.unit=rng.unit;c.min=rng.min;c.max=rng.max;c.step=rng.step;}
+  const inp=document.getElementById(id); if(!inp) return false;
+  const num=document.getElementById(id+'_num');
+  inp.min=rng.min; inp.max=rng.max; inp.step=rng.step;
+  if(num){
+    if(c&&c.log){num.min=Math.pow(10,rng.min);num.max=Math.pow(10,rng.max);}
+    else{num.min=rng.min;num.max=rng.max;}
+    num.step='any';
+  }
+  const raw=+value||0;
+  const v=clamp(raw,rng.min,rng.max);
+  svalMap[id]=v;
+  inp.value=v;
+  const ctl=inp.closest('.ctl');
+  if(ctl){const left=ctl.querySelector('.left');if(left&&left.childNodes.length)left.childNodes[0].nodeValue=rng.label+' ';}
+  if(outs[id])outs[id](true);
+  const clamped=raw<rng.min-1e-12||raw>rng.max+1e-12;
+  const warnEl=ctl?ctl.querySelector('.warn'):null;
+  if(clamped&&note){
+    inp.title=note; if(num)num.title=note;
+    if(warnEl)warnEl.textContent='\u26A0 dibatasi';
+  }else{inp.title='';if(num)num.title='';if(warnEl)warnEl.textContent='';}
+  return clamped;
+}
+function setUnitMs(nu){
+  const prev=prevUnitMs;
+  const rho=rhoNow();
+  const disp=sval('mMsp',0);
+  const internal=prev==='emu/g'?disp*rho:disp; /* kA/m */
+  const rng=MS_RANGE[nu]||MS_RANGE[DEF_UNIT_MS];
+  const ndisp=nu==='emu/g'?internal/rho:internal;
+  const from=fmtNum(ndisp)+' '+rng.unit;
+  reconfSlider('mMsp',rng,ndisp,ndisp<rng.min||ndisp>rng.max?('Nilai '+from+' di luar range, dibatasi ke ['+rng.min+'..'+rng.max+'] '+rng.unit+'. Fisika ikut berubah.'):null);
+  prevUnitMs=nu;
+}
+function setUnitK(nu){
+  const prev=prevUnitK;
+  const disp=sval('mK',0);
+  const internalKJ=prev==='erg/cm3'?disp/ERG_PER_KJ:disp; /* kJ/m3 */
+  const rng=K_RANGE[nu]||K_RANGE[DEF_UNIT_K];
+  const ndisp=nu==='erg/cm3'?internalKJ*ERG_PER_KJ:internalKJ;
+  const from=fmtNum(ndisp)+' '+rng.unit;
+  reconfSlider('mK',rng,ndisp,ndisp<rng.min||ndisp>rng.max?('Nilai '+from+' di luar range, dibatasi ke ['+rng.min+'..'+rng.max+'] '+rng.unit+'. Fisika ikut berubah.'):null);
+  prevUnitK=nu;
+}
+/* ---------- Satuan Hc: Oe default, mT opsi (1 mT = 10 Oe; internal tetap mT) ---------- */
+const HC_RANGE={'Oe':{min:0,max:20,step:0.5,unit:'Oe',label:'Koersif sensor Hc (Oe)'},'mT':{min:0,max:2,step:0.05,unit:'mT',label:'Koersif sensor Hc (mT)'}};
+const HCSIG_RANGE={'Oe':{min:0,max:20,step:0.2,unit:'Oe',label:'Sebaran Hc (std, Oe)'},'mT':{min:0,max:2,step:0.02,unit:'mT',label:'Sebaran Hc (std, mT)'}};
+const OE_PER_MT=10;
+const DEF_UNIT_HC='Oe';
+let prevUnitHc=DEF_UNIT_HC;
+function unitHc(){const e=document.getElementById('unitHc');return e?e.value:DEF_UNIT_HC;}
+function setUnitHc(nu){
+  const prev=prevUnitHc;
+  const conv=(id,rng)=>{
+    const disp=sval(id,0);
+    const internalMT=prev==='Oe'?disp/OE_PER_MT:disp; /* mT */
+    const ndisp=nu==='Oe'?internalMT*OE_PER_MT:internalMT;
+    const from=fmtNum(ndisp)+' '+rng.unit;
+    reconfSlider(id,rng,ndisp,ndisp<rng.min||ndisp>rng.max?('Nilai '+from+' di luar range, dibatasi ke ['+rng.min+'..'+rng.max+'] '+rng.unit+'. Fisika ikut berubah.'):null);
+  };
+  conv('Hc',HC_RANGE[nu]||HC_RANGE[DEF_UNIT_HC]);
+  conv('sigHc',HCSIG_RANGE[nu]||HCSIG_RANGE[DEF_UNIT_HC]);
+  prevUnitHc=nu;
+}
+/* ---------- Reset satu slider ke default: satuan default + nilai kanonik sinkron DOM ---------- */
+function resetSlider(id){
+  const c=cfgOf(id); if(!c) return;
+  let rng=null;
+  if(id==='mMsp') rng=MS_RANGE[DEF_UNIT_MS];
+  else if(id==='mK') rng=K_RANGE[DEF_UNIT_K];
+  else if(id==='Hc') rng=HC_RANGE[DEF_UNIT_HC];
+  else if(id==='sigHc') rng=HCSIG_RANGE[DEF_UNIT_HC];
+  if(rng) reconfSlider(id,rng,clamp(c.val,rng.min,rng.max));
+  else sset(id,c.val);
+}
+(function initUnitSwitch(){
+  const uM=document.getElementById('unitMs'), uK=document.getElementById('unitK');
+  if(uM){uM.value=DEF_UNIT_MS;prevUnitMs=DEF_UNIT_MS;uM.addEventListener('change',()=>{setUnitMs(uM.value);schedule();});}
+  if(uK){uK.value=DEF_UNIT_K;prevUnitK=DEF_UNIT_K;uK.addEventListener('change',()=>{setUnitK(uK.value);schedule();});}
+  const uH=document.getElementById('unitHc');
+  if(uH){uH.value=DEF_UNIT_HC;prevUnitHc=DEF_UNIT_HC;uH.addEventListener('change',()=>{setUnitHc(uH.value);schedule();});}
+})();
+
 /* ---------- Baris sampel ---------- */
 let rowsState=[]; let rowUid=0;
-const autoLabel=m=>m>0?`${+m.toFixed(3)} gram`:'Tanpa nano';
+const autoLabel=m=>m>0?`${+m.toFixed(3)} gram`:'Tanpa sampel';
 function setRows(list){ rowsState=list.map(m=>({id:++rowUid,mass:m,label:autoLabel(m),auto:true})); renderRows(); }
 function renderRows(){
   const host=$('#rows'); host.innerHTML='';
@@ -860,11 +1030,11 @@ const so=document.createElement('option'); so.value='custom'; so.textContent='Ku
 let applyingS=false;
 function applySens(){
   const k=sensSel.value; if(k==='custom') return; const m=SENS[k]; applyingS=true;
-  $('#sMs').value=m.Ms; $('#salpha').value=m.alpha; $('#sdH0').value=m.dH0; $('#ssigF').value=m.sigF; $('#ssigC').value=50;
+  sset('sMs',m.Ms); sset('salpha',m.alpha); sset('sdH0',m.dH0); sset('ssigF',m.sigF); sset('ssigC',50);
   applyingS=false; refreshOutputs();
 }
 sensSel.addEventListener('change',()=>{applySens();schedule();});
-['sMs','salpha','sdH0','ssigF','ssigC'].forEach(id=>{const e=$('#'+id); if(e) e.addEventListener('input',()=>{if(!applyingS)sensSel.value='custom';});});
+['sMs','salpha','sdH0','ssigF','ssigC'].forEach(id=>{const e=$('#'+id); if(e) e.addEventListener('input',()=>{if(!applyingS)sensSel.value='custom';}); const en=document.getElementById(id+'_num'); if(en) en.addEventListener('input',()=>{if(!applyingS)sensSel.value='custom';});});
 ['axis','showDown','showModel'].forEach(id=>$('#'+id).addEventListener('input',schedule));
 
 const presetSel=$('#preset');
@@ -878,36 +1048,52 @@ let applyingPreset=false;
 function applyPreset(){
   const k=presetSel.value; if(k==='custom') return;
   const m=MATS[k]; applyingPreset=true;
-  $('#mtype').value=m.type; $('#mMsp').value=m.Msp; $('#md').value=m.d; $('#mK').value=m.K; $('#mtau0').value=m.tau0;
-  $('#malphaP').value=m.alphaP; $('#mchiV').value=m.chiV; $('#mrho').value=m.rho;
+  $('#mtype').value=m.type;
+  /* rho dulu agar konversi sigma(emu/g)=Msp/rho benar */
+  sset('mrho',m.rho);
+  const rho=Math.max(m.rho||5.18,0.1);
+  const oor=(nd,r)=>nd<r.min||nd>r.max?('Nilai '+fmtNum(nd)+' '+r.unit+' di luar range, dibatasi ke ['+r.min+'..'+r.max+'] '+r.unit+'. Fisika ikut berubah.'):null;
+  if(unitMs()==='emu/g'){const r=MS_RANGE['emu/g'],nd=(m.Msp||0)/rho;reconfSlider('mMsp',r,nd,oor(nd,r));}
+  else{const r=MS_RANGE['kA/m'],nd=m.Msp||0;reconfSlider('mMsp',r,nd,oor(nd,r));}
+  if(unitK()==='erg/cm3'){const r=K_RANGE['erg/cm3'],nd=(m.K||0)*ERG_PER_KJ;reconfSlider('mK',r,nd,oor(nd,r));}
+  else{const r=K_RANGE['kJ/m3'],nd=m.K||0;reconfSlider('mK',r,nd,oor(nd,r));}
+  sset('md',m.d); sset('mtau0',m.tau0);
+  sset('malphaP',m.alphaP); sset('mchiV',m.chiV);
   applyingPreset=false; refreshOutputs();
 }
 presetSel.addEventListener('change',()=>{applyPreset();schedule();});
-['mtype','mMsp','md','mK','mtau0','malphaP','mchiV','mrho'].forEach(id=>{const e=$('#'+id); if(e) e.addEventListener('input',()=>{if(!applyingPreset)presetSel.value='custom';});});
+['mtype','mMsp','md','mK','mtau0','malphaP','mchiV','mrho'].forEach(id=>{const e=$('#'+id); if(e) e.addEventListener('input',()=>{if(!applyingPreset)presetSel.value='custom';}); const en=document.getElementById(id+'_num'); if(en) en.addEventListener('input',()=>{if(!applyingPreset)presetSel.value='custom';});});
 
 function getP(){
-  const gv=id=>{const e=document.getElementById(id);return e?+e.value:0;};
+  const gv=id=>sval(id,0);
   const gb=id=>{const e=document.getElementById(id);return e?!!e.checked:false;};
-  const v=id=>+document.getElementById(id).value;
+  const v=id=>sval(id,0);
+  const hcD=v('Hc'), shcD=Math.max(gv('sigHc'),0);
+  const hcMT=unitHc()==='Oe'?hcD/OE_PER_MT:hcD, shcMT=unitHc()==='Oe'?shcD/OE_PER_MT:shcD;
   const P={Ms:v('sMs'),alpha:v('salpha'),dH0:v('sdH0'),sigF:v('ssigF'),sigC:v('ssigC'),axis:$('#axis').value,
-    Hk:v('Hk'),sigHk:Math.max(v('sigHk')||0,0),Hc:v('Hc'),sigHc:Math.max(gv('sigHc'),0),edgeC:clamp(gv('edgeC')||0,0,1),dwAmp:Math.max(gv('dwAmp'),0),
+    Hk:v('Hk'),sigHk:Math.max(v('sigHk')||0,0),Hc:hcMT,sigHc:shcMT,edgeC:clamp(gv('edgeC')||0,0,1),dwAmp:Math.max(gv('dwAmp'),0),
     tf:v('tf'),tcu:v('tcu'),len:v('len'),wid:v('wid'),f:Math.pow(10,v('freq')),Rc:v('Rc'),RcSkin:Math.max(gv('RcSkin'),0),Lp:v('Lp'),
     Hmax:v('Hmax'),Hfine:Math.min(v('Hfine'),v('Hmax')),d1:v('d1'),d2:v('d2'),sigH:v('sigH'),sigZ:v('sigZ'),
     pf:clamp(v('mpf')||0.2,0.01,0.64),Ac:Math.max(v('mAc')||20,0.01),Cd:Math.max(v('mCd'),0),T:Math.max(v('mT')||300,1),
-    eta:(()=>{const e=document.getElementById('eta');const raw=e?e.value:'';if(raw===''||raw===null||!isFinite(+raw))return 1;return clamp(+raw,0,1);})(),dblSide:gb('dblSide')};
+    eta:clamp(sval('eta',1),0,1),dblSide:gb('dblSide')};
   P.kcoilTheory=0.7155*MU0*v('N')/(v('Rcoil')/100)*1000;
-  const kM=+document.getElementById('kMeas').value||0;
+  const kM=sval('kMeas',0);
   P.kcoil=kM>0?kM:P.kcoilTheory; /* I_cmd = Hset/kcoil */
-  const kT=+document.getElementById('kTrue').value||0;
+  const kT=sval('kTrue',0);
   P.kcoilTrue=kT>0?kT:P.kcoil; /* Haktual = kTrue*I_cmd + Boff + noise; default sama (backward compat) */
-  P.Boff=+document.getElementById('Boff').value||0;
-  P.sigHr=Math.max(+document.getElementById('sigHr').value||0,0);
+  P.Boff=sval('Boff',0);
+  P.sigHr=Math.max(sval('sigHr',0),0);
   P.showSet=document.getElementById('showSet').checked;
   return P;
 }
 function getMat(){
-  const v=id=>+document.getElementById(id).value||0;
-  return {type:$('#mtype').value,Msp:v('mMsp'),d:Math.max(v('md'),0.5),sigD:Math.max(v('msigD')||0,0),sigP:Math.max(v('msigP')||0,0),K:Math.max(v('mK'),1e-6),tau0:Math.max(v('mtau0'),1e-6),alphaP:Math.max(v('malphaP'),1e-4),chiV:v('mchiV'),rho:Math.max(v('mrho'),0.1)};
+  const v=id=>sval(id,0);
+  const rho=Math.max(v('mrho'),0.1);
+  const dispMs=v('mMsp'), dispK=v('mK');
+  /* internal tetap kA/m & kJ/m3 agar fisika tak berubah */
+  const Msp=unitMs()==='emu/g'?dispMs*rho:dispMs;
+  const Kraw=unitK()==='erg/cm3'?dispK/ERG_PER_KJ:dispK;
+  return {type:$('#mtype').value,Msp:Msp,d:Math.max(v('md'),0.5),sigD:Math.max(v('msigD')||0,0),sigP:Math.max(v('msigP')||0,0),K:Math.max(Kraw,1e-6),tau0:Math.max(v('mtau0'),1e-6),alphaP:Math.max(v('malphaP'),1e-4),chiV:v('mchiV'),rho:rho};
 }
 
 /* ---------- Perhitungan utama ---------- */
@@ -1184,7 +1370,7 @@ function recompute(){
     if(fitSel&&labels.length){
       const cur=fitSel.value;
       fitSel.innerHTML=''; labels.forEach(lb=>{const o=document.createElement('option');o.value=lb;o.textContent=lb;fitSel.appendChild(o);});
-      const guess=labels.find(l=>/tanpa|tanpa nano|^0|acuan|nol/i.test(l))||labels[0];
+      const guess=labels.find(l=>/tanpa|^0|acuan|nol/i.test(l))||labels[0];
       fitSel.value=labels.includes(cur)?cur:guess;
     }else if(fitSel&&!labels.length){fitSel.innerHTML='';}
     if(!expData.length){ if(info) info.textContent='Belum ada data eksperimen yang diimpor.'; if(box) box.innerHTML=''; return; }
@@ -1398,7 +1584,18 @@ $('#play').addEventListener('click',()=>{
   timer=setInterval(()=>{ if(+obs.value>=+obs.max){stopPlay();return;} obs.value=+obs.value+1; updateObs(); },180);
 });
 $('#rerun').addEventListener('click',()=>{seed=Math.floor(Math.random()*1e9);recompute();});
-function resetAll(){sensSel.value='nife';applySens();presetSel.value='fe3o4';applyPreset();$('#mpf').value=0.2;$('#mAc').value=20;$('#mCd').value=0.1;$('#mT').value=300;$('#msigD').value=0;$('#kMeas').value=0;if($('#kTrue'))$('#kTrue').value=0;$('#Boff').value=0;$('#sigHr').value=0;if($('#eta'))$('#eta').value=1;if($('#dblSide'))$('#dblSide').checked=false;if($('#sigHc'))$('#sigHc').value=0;if($('#edgeC'))$('#edgeC').value=0;if($('#dwAmp'))$('#dwAmp').value=0;if($('#RcSkin'))$('#RcSkin').value=0;if($('#msigP'))$('#msigP').value=0;$('#showSet').checked=false;$('#showExp').checked=true;if($('#showBand'))$('#showBand').checked=true;chartView='mir';Object.keys(axState).forEach(k=>axState[k]={touched:{},vals:{}});setRows([0,0.1,0.3]);lastRun=null;seed=20261012;refreshOutputs();recompute();}
+function resetAll(){
+  sensSel.value='nife'; presetSel.value='fe3o4';
+  const uM=document.getElementById('unitMs'),uK=document.getElementById('unitK'),uH=document.getElementById('unitHc');
+  if(uM)uM.value=DEF_UNIT_MS; if(uK)uK.value=DEF_UNIT_K; if(uH)uH.value=DEF_UNIT_HC;
+  prevUnitMs=DEF_UNIT_MS; prevUnitK=DEF_UNIT_K; prevUnitHc=DEF_UNIT_HC;
+  for(const g in CFG) CFG[g].forEach(c=>resetSlider(c.id));
+  applyPreset(); applySens();
+  if($('#dblSide'))$('#dblSide').checked=false;
+  $('#showSet').checked=false; $('#showExp').checked=true; if($('#showBand'))$('#showBand').checked=false;
+  chartView='mir'; Object.keys(axState).forEach(k=>axState[k]={touched:{},vals:{}});
+  setRows([0,0.1,0.3]); lastRun=null; seed=20261012; refreshOutputs(); recompute();
+}
 $('#ctlForm').addEventListener('reset',()=>{ setTimeout(resetAll,0); });
 
 $('#dlCsv').addEventListener('click',()=>{
@@ -1442,8 +1639,8 @@ $('#fitSensor').addEventListener('click',()=>{
       const v=expCost(P,mat,lb,refMass,2);
       return isFinite(v)?v:1e12;
     };
-    const r=nelderMead(cost,[+($('#Hk').value||3),+($('#sigHk').value||0)],[0.5,0.3],60);
-    $('#Hk').value=+r.x[0].toFixed(3); $('#sigHk').value=+r.x[1].toFixed(3);
+    const r=nelderMead(cost,[sval('Hk',3),sval('sigHk',0)],[0.5,0.3],60);
+    sset('Hk',+r.x[0].toFixed(3)); sset('sigHk',+r.x[1].toFixed(3));
     refreshOutputs(); schedule();
     $('#fitStatus').textContent=`Fit sensor selesai: Hk=${f(r.x[0],3)} mT, sigHk=${f(r.x[1],3)} mT, cost=${f(r.fun,3)}. Kunci dulu hasil ini, baru Fit Cd.`;
   },30);
@@ -1467,8 +1664,8 @@ $('#fitCd').addEventListener('click',()=>{
       });
       return n?s/n:1e12;
     };
-    const r=nelderMead(cost,[+($('#mCd').value||0.1)],[0.1],40);
-    $('#mCd').value=+r.x[0].toFixed(4);
+    const r=nelderMead(cost,[sval('mCd',0.1)],[0.1],40);
+    sset('mCd',+r.x[0].toFixed(4));
     refreshOutputs(); schedule();
     $('#fitStatus').textContent=`Fit Cd selesai: Cd=${f(r.x[0],4)}, cost=${f(r.fun,3)}. Uji pada massa yang tidak ikut difit (blind) untuk klaim kuantitatif.`;
   },30);
